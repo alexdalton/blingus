@@ -1,6 +1,6 @@
 import random
 
-possible_mutations = ["'", "--", " OR", " AND", " UNION", ";", '"']
+possible_mutations = ["'", "--", " OR", " AND", " UNION", ";", '"', "#"]
 fuzz_vectors = [
                 "'||(elt(-3+5,bin(15),ord(10),hex(char(45))))", "||6", "'||'6", "(||6)",
                 "' OR 1=1-- ", "OR 1=1", "' OR '1'='1",
@@ -54,11 +54,11 @@ fuzz_vectors = [
 
 
 class mutator:
-    def __init__(self, mode, initial_str, seed=0):
+    def __init__(self, mode, initial_str, seed=None):
         self.mode = mode
         self.initial_str = initial_str
         self.testnum = 0
-        if (seed != 0):
+        if (seed is not None):
             random.seed(seed)
 
     def mutate(self, strToMutate):

