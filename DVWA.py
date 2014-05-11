@@ -35,3 +35,5 @@ class sender:
         resp = urllib2.urlopen(req)
         contents = resp.read()
         return contents
+
+    #TODO check function
