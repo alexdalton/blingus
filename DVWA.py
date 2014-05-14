@@ -2,14 +2,14 @@ import urllib
 import urllib2
 import cookielib
 
-class sender:
+class interface:
     def __init__(self):
         cj = cookielib.CookieJar()
         opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
 
         opener.addheaders = [('User-agent', 'DVWATesting')]
         urllib2.install_opener(opener)
-        authentication_url = "http://192.168.2.2/DVWA/login.php"
+        authentication_url = "http://localhost/DVWA/login.php"
 
         login_params = {
                        "username" : "admin",
@@ -24,7 +24,7 @@ class sender:
         resp.read()
 
     def send(self, sqlString):
-        sql_url = "http://192.168.2.2/DVWA/vulnerabilities/sqli/?"
+        sql_url = "http://localhost/DVWA/vulnerabilities/sqli/?"
         sql_params = {
                       "id" : sqlString,
                       "Submit" : "Submit"
