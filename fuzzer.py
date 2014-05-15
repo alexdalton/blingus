@@ -4,6 +4,10 @@ from mutator import mutator
 
 class fuzzer:
     def __init__(self, interface, filename, seed=None, mode=0):
+        """
+        Initializes the fuzzer class wit the interface to use and file to import
+        the fuzz vectors from, also passes seed and mode to the mutator
+        """
         # Import sender class and initialize
         self.interfaceClass = importlib.import_module(interface)
         self.interface = self.interfaceClass.interface()
@@ -19,10 +23,11 @@ class fuzzer:
         fuzzFile.close()
 
     def send(self, message):
-        #print message
+        """Uses the interface class to send the SQL string to the interface"""
         return self.interface.send(message)
 
     def fuzz(self, runTime=10):
+        """Main fuzzing function that fuzzes an interface for time = runTime"""
         startTime = time.time()
         message = ""
         i = 0

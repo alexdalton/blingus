@@ -3,9 +3,12 @@ import urllib2
 
 class interface:
     def __init__(self):
+        """Intentionally empty"""
         pass
 
     def send(self, sqlString):
+        """Send to the search interface of ZMDB"""
+        # Change url and params for another zmdb interface
         sql_url = "http://www.zmdb.org/search/"
         sql_params = {
                       "from": "items",
@@ -21,6 +24,7 @@ class interface:
         return self.check(contents)
 
     def check(self, contents):
+        """Check if there's a match with an error indicator"""
         error_indicators = ["error in your SQL syntax",
                             "mysql_num_rows() expects parameter 1",
                             "mysql_fetch_row() expects parameter 1",

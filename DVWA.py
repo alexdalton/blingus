@@ -4,6 +4,7 @@ import cookielib
 
 class interface:
     def __init__(self):
+        """Initialize the DVWA interface by logging in"""
         cj = cookielib.CookieJar()
         opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
 
@@ -24,6 +25,7 @@ class interface:
         resp.read()
 
     def send(self, sqlString):
+        """Send SQL strings to the SQL page of DVWA"""
         sql_url = "http://localhost/DVWA/vulnerabilities/sqli/?"
         sql_params = {
                       "id" : sqlString,
@@ -37,6 +39,7 @@ class interface:
         return self.check(contents)
 
     def check(self, contents):
+        """Checks if there's a match with an error indicator"""
         error_indicators = ["error in your SQL syntax",
                             "mysql_num_rows() expects parameter 1",
                             "Query error", "SQL Error",

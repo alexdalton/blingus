@@ -6,20 +6,28 @@ modes = ["any of the possible_mutations", "use best possible_mutations", "use al
 
 class mutator:
     def __init__(self, mode, seed=None):
+        """Initialize the mutator with the seed and mode"""
+
         self.mode = mode
         self.testnum = 0
+        # list of delimieters, these also qualify as words to remove/add when mutating
         self.delimiters = ["'", '"', ";", "--", "/*", "#", "`", ",", "=", "(", ")", "+"]
+        # list of new words to add when addNewWord mutation is used
         self.new_words = ["AND", "OR", "UNION", "DESC users", "EXEC XP_", "'", '"',
                           ";", "--", "/*", "`", "#", "=", ",", ")"]
-        self.best_mutations = [self.addNWords, self.addNNewWords, self.removeNWords, self.addDelimiter,
-                               self.removeDelimiter]
-        self.all_mutations = [self.addWord, self.removeWord, self.addNchars, self.removeNchars,
-                              self.addNewWord, self.addNWords, self.addNNewWords, self.removeNWords,
-                              self.addDelimiter, self.removeDelimiter]
+        # list of function points to use in best mutations mode
+        self.best_mutations = [self.addNWords, self.addNNewWords, self.removeNWords,
+                               self.addDelimiter, self.removeDelimiter]
+        # list of all mutations to use in all mutations mode
+        self.all_mutations = [self.addWord, self.removeWord, self.addNchars,
+                              self.removeNchars, self.addNewWord, self.addNWords,
+                              self.addNNewWords, self.removeNWords, self.addDelimiter,
+                              self.removeDelimiter]
         if (seed is not None):
             random.seed(seed)
 
     def mutate(self, strToMutate, n=None):
+        """Takes in a string and mutates it in some way dependent on the mode"""
         return_str = ""
         if self.mode == 0: # best mutations
             mutation_select = random.randrange(0, len(self.best_mutations))
@@ -42,6 +50,7 @@ class mutator:
         return return_str
 
     def addWord(self, string, n=None):
+        """Mutates the string by adding a copy of an existing word in the string"""
         possible_words = []
         string_copy = string
         for delim in self.delimiters:
@@ -57,6 +66,7 @@ class mutator:
         return tuple3[0] + tuple3[1] + randomWord + tuple3[2]
 
     def removeWord(self, string, n=None):
+        """Removes an existing word from the string"""
         if string == "":
             return ""
         possible_words = []
@@ -72,6 +82,7 @@ class mutator:
         return string.replace(randomWord, "", 1)
 
     def addNchars(self, string, n=None):
+        """Adds N random characters form the string to random locations in the string"""
         out_string = string
         i = 0
         if n is None:
@@ -84,6 +95,7 @@ class mutator:
         return out_string
 
     def removeNchars(self, string, n=None):
+        """Removes N random characters from the string"""
         if n > len(string) or string == "":
             return ""
         else:
@@ -98,6 +110,7 @@ class mutator:
             return out_string
 
     def addNewWord(self, string, n=None):
+        """Adds a word from the new words list to the string in a random location"""
         randIndexes = range(len(self.new_words))
         random.shuffle(randIndexes)
         randWord = ""
@@ -118,6 +131,7 @@ class mutator:
         return tuple3[0] + tuple3[1] + randWord + tuple3[2]
 
     def addNWords(self, string, n=None):
+        """Adds N words to the string, calls addWord n times"""
         i = 0
         out_string = string
         if n is None:
@@ -128,6 +142,7 @@ class mutator:
         return out_string
 
     def addNNewWords(self, string, n=None):
+        """Adds N new words to the string, calls addNewWord n times"""
         i = 0
         out_string = string
         if n is None:
@@ -138,6 +153,7 @@ class mutator:
         return out_string
 
     def removeNWords(self, string, n=None):
+        """Removes N words from the string, calls removeWord n times"""
         if string == "":
             return ""
         i = 0
@@ -150,6 +166,7 @@ class mutator:
         return out_string
 
     def addDelimiter(self, string, n=None):
+        """Adds a random delimiter from the delimiter list to a random location"""
         randIndexes = range(len(self.delimiters))
         random.shuffle(randIndexes)
         randDelim = ''
@@ -170,6 +187,7 @@ class mutator:
         return tuple3[0] + tuple3[1] + randDelim + tuple3[2]
 
     def removeDelimiter(self, string, n=None):
+        """Removes a random delimiter from the string"""
         if string == "":
             return ""
         randIndexes = range(len(self.delimiters))
