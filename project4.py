@@ -1,37 +1,20 @@
 import urllib
 import urllib2
-import cookielib
 
 class interface:
     def __init__(self):
-        cj = cookielib.CookieJar()
-        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
-
-        opener.addheaders = [('User-agent', 'DVWATesting')]
-        urllib2.install_opener(opener)
-        authentication_url = "http://localhost/DVWA/login.php"
-
-        login_params = {
-                       "username" : "admin",
-                       "password" : "password",
-                       "Login": "Login"
-                      }
-        login_args = urllib.urlencode(login_params)
-
-        req = urllib2.Request(authentication_url, login_args)
-
-        resp = urllib2.urlopen(req)
-        resp.read()
+        pass
 
     def send(self, sqlString):
-        sql_url = "http://localhost/DVWA/vulnerabilities/sqli/?"
+        sql_url = "http://traveleesite.web.engr.illinois.edu/loginUser.php"
         sql_params = {
-                      "id" : sqlString,
-                      "Submit" : "Submit"
+                      "username": sqlString,
+                      "password": sqlString,
+                      "Submit": "Submit"
         }
         sql_args = urllib.urlencode(sql_params)
 
-        req = urllib2.Request(sql_url + sql_args + '#')
+        req = urllib2.Request(sql_url, sql_args)
         resp = urllib2.urlopen(req)
         contents = resp.read()
         return self.check(contents)
@@ -39,6 +22,8 @@ class interface:
     def check(self, contents):
         error_indicators = ["error in your SQL syntax",
                             "mysql_num_rows() expects parameter 1",
+                            "mysql_fetch_row() expects parameter 1",
+                            "Unknown column",
                             "Query error", "SQL Error",
                             "Database Engine error", "Error has occurred",
                             "error occurred", "SQL Provider Error",
