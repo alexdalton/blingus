@@ -1,5 +1,7 @@
-__author__ = 'emlynlyn'
-# this code implement a network node, which listens (as a server), sends messages (as a client), with delay function, and
+__author__ = 'Yanning Li'
+# this code implements a network node, which listens
+# (as a server), sends messages (as a client),
+# with delay function, and
 # command line interface
 
 import socket
@@ -7,95 +9,90 @@ import sys
 import threading
 import time
 import cmd
+import Queue
+import csv
+
+# define global queues
+# to be pushed to channel (delay happens in channel)
+# a tuple, destination(ABCD), and message
+q_toChannel = Queue.Queue()
+
+# to be send out (after delay)
+# a tuple: destination (ABCD), message
+q_toSend = Queue.Queue()
 
 
-# Three classes to be written
-# Channel Class which handles the delay and communication
-# Interface Class which handles the cmd line interface
-# Node Class, which creates nodes in the network
-
-# Those classes can use the following thread classes to
-# assign tasks to each thread
-
-
-
-# the client thread class which sends message
-class ServerComThread(threading.Thread):
-    def __init__(self, thread_id, name, sock):
+# the client thread which constantly read q_toSend and send out messages
+class SendThread(threading.Thread):
+    def __init__(self, node_dict, name):
         threading.Thread.__init__(self)
-        self.threadID = thread_id
-        self.name = name
-        self.sock = sock
-        self.counter = 5
+        self.node_dict = node_dict
+        self.node_name = name
 
     def run(self):
-        print "Starting " + self.name
-        # threadLock.acquire()
-        # send packages for 5 rounds
-        server_com(self.name, self.sock, 5)
-        # threadLock.release()
+        # print "Starting sending thread"
+
+        while True:
+            if not q_toSend.empty():
+                item = q_toSend.get()
+                dest = self.node_dict[item[0]]
+
+                UDP_IP = dest[0]
+                UDP_PORT = int(dest[1])
+                MESSAGE = self.node_name + ',' + item[1]
+
+                sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                sock.sendto(MESSAGE, (UDP_IP, UDP_PORT))
+
+            else:
+                time.sleep(0.1)
 
 
-def server_com(thread_name, sock, counter):
-    # never close the socket
-    # assume data can be transmitted in 1024
-    client_data = sock.recv(1024)
-    # print the length of the received data
-    # print len(client_data)
-    if not client_data:
-        print 'server: no data received'
-    # time.sleep(1)
-    print 'server: talking with', thread_name
-    # sock.send(client_data + 'received by' + thread_name)
-    sock.close()
-
-
-# the server thread class which listens incoming connections
-class ServerThread(threading.Thread):
-    def __init__(self, name, sock):
+# the server thread class which listens incoming messages
+# create a thread to handle incoming messages once sock bind
+class ReceiveThread(threading.Thread):
+    def __init__(self, name, sock, node_dict, delay_dict):
         threading.Thread.__init__(self)
         self.name = name
         self.sock = sock
+        self.node_dict = node_dict
+        self.delay_dict = delay_dict
 
     def run(self):
-        print 'server starts listening' + self.name
-        # threadLock.acquire()
-        # send packages for 5 rounds
-        server_listen(self.name, self.sock)
-        # threadLock.release()
+        # print 'node ' + self.name + ' starts listening:'
 
+        while True:
+            msg_str, addr = self.sock.recvfrom(1024)
 
-def server_listen(thread_name, sock, counter):
-    # accept connections
-    num_connection_server = 0
-    while 1:
-        conn_s, addr_s = sock.accept()
-        print 'Connected by ', addr_s
-        num_connection_server += 1
+            msg = msg_str.split(',')
 
-        # assign a new thread to handle the communication
-        # read in the data
-        # send back ack
-        tmp_thread = ServerComThread('Thread-'+str(num_connection_server), conn_s)
-        tmp_thread.start()
-        print 'created thread to hand incoming msg'
+            sender = msg[0]
+            data = msg[1]
+
+            # find out the maximal delay
+            chn = sender + self.name
+            if self.delay_dict[chn] is None:
+                print 'invalid channel' + chn
+            else:
+                delay_max = int(self.delay_dict[chn])
+
+            # print message
+            print 'Received "' + data + '" from ' + sender + ', Max delay is ' \
+                + str(delay_max) + 's, system time is ' + \
+                time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
 
 
 # delay function thread which generate random delays
 class DelayThread(threading.Thread):
-    def __init__(self, threadID, name, sock):
+    def __init__(self):
         threading.Thread.__init__(self)
-        self.threadID = threadID
-        self.name = name
-        self.sock = sock
-        self.counter = 5
 
     def run(self):
-        print "Starting " + self.name
-        # threadLock.acquire()
-        # send packages for 5 rounds
-        # sockCom(self.name, self.sock, 5)
-        # threadLock.release()
+        while True:
+            if not q_toChannel.empty():
+                item = q_toChannel.get()
+                time.sleep(1)
+                q_toSend.put(item)
 
 
 # command line interface thread
@@ -109,84 +106,136 @@ class CmdThread(threading.Thread):
         print "Starting command line interface..."
 
         # create command line interface object
-        cli = NetCmdShell()
+        cli = MP1Shell()
         print 'created cmd line interface object'
         cli.cmdloop()
         print 'started command line interface'
 
 
 # command line class
-class NetCmdShell(cmd.Cmd):
-    intro = 'Welcome to the net command line shell,' \
+class MP1Shell(cmd.Cmd):
+    intro = 'Welcome to the MP1 shell,' \
             ' type help or ? to list commands'
-    prompt = '(NetCmd)'
+    prompt = '(MP1) '
     file = None
 
     # ------- basic commands -------------
-    def do_send(self, arg):
-        print 'send message'
+    def do_Send(self, arg):
+        """
+        :param arg: Send Message Destination
+        :return: Sent "Hello" to B, system time is ...
+        """
+        tp = arg.split()
+        q_toChannel.put((tp[1], tp[0]))
+        print 'Send "' + tp[0] + '" to ' + tp[1] + ', system time is ' + \
+            time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
 
-    def do_recv(self, arg):
-        print 'receive message'
+    def do_show(self, arg):
+        """
+        show the q_toSend and q_toChannel for debugging
+        :param arg: toSend, toChannel
+        :return: print q_toSend, q_toChannel
+        """
+        if arg == 'toSend':
+            q_toSend_copy = q_toSend
+            if not q_toSend_copy.empty():
+                while not q_toSend_copy.empty():
+                    print q_toSend_copy.get()
+            else:
+                print 'q_toSend is empty'
+
+        if arg == 'toChannel':
+            q_toChannel_copy = q_toChannel
+            if not q_toChannel_copy.empty():
+                while not q_toChannel_copy.empty():
+                    print q_toChannel_copy.get()
+            else:
+                print 'q_toChannel is empty'
+
+    def do_byebye(self, arg):
+        """
+        :param arg: bye (stop code)
+        :return: true
+        """
+        print 'stop demo'
+        # sys.exit(0)
 
 
-def parse(arg):
-    print 'parse the argument'
+def main(argv):
+    if len(argv) != 2:
+        print 'Specify config file and node name'
+        sys.exit(0)
 
-# to figure out what the following means
+    print str(argv)
+
+    config_file = str(argv[0])
+    node_name = argv[1]
+
+    # print config_file
+
+    # first read configuration file to set it up
+    f = open(config_file, 'r')
+    config = csv.reader(f)
+    # print 'read done'
+    header_config = config.next()
+
+    # save name, IP, and ports in dic
+    node_dict = {}
+    delay_dict = {}
+    dict_ip_done = False
+    for row in config:
+        # print row
+
+        if row[0] == 'Channel':
+            dict_ip_done = True
+            continue
+
+        if not dict_ip_done:
+            name = row[0]
+            ip = row[1]
+            port = row[2]
+            node_dict[name] = [ip, port]
+
+        else:
+            chn = row[0]
+            max_delay = row[1]
+            delay_dict[chn] = max_delay
+
+    f.close()
+
+    # start a thread for listening and receiving packages
+    tu = node_dict[node_name]
+    HOST = tu[0]
+    PORT = int(tu[1])
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind((HOST, PORT))
+
+    print node_name
+    print HOST
+    print PORT
+
+    recv_thread = ReceiveThread(node_name, sock, node_dict, delay_dict)
+    print 'created receive thread'
+    recv_thread.start()
+
+    # Here start the thread for command line interface
+    shell_thread = CmdThread('MP1Shell')
+    print 'created shell thread'
+    shell_thread.start()
+
+    # Here start the thread for checking if should send out messages
+    send_thread = SendThread(node_dict, node_name)
+    print 'created send thread'
+    send_thread.start()
+
+    # Here start the delay thread
+    delay_thread = DelayThread()
+    print 'created delay thread'
+    delay_thread.start()
+
+
 if __name__ == '__main__':
-    NetCmdShell().cmdloop()
+    main(sys.argv[1:])
 
 
-
-HOST = None
-PORT = 50007
-s = None
-
-threadLock = threading.Lock()
-threads = []
-
-for res in socket.getaddrinfo(HOST, PORT, socket.AF_UNSPEC,
-                              socket.SOCK_STREAM, 0, socket.AI_PASSIVE):
-
-    af, socktype, proto, canonname, sa = res
-    try:
-        print 'server: try to create new socket'
-        s = socket.socket(af, socktype, proto)
-    except socket.error as msg:
-        print 'server: could not create new socket'
-        print msg
-        s = None
-        continue
-    try:
-        print 'server: try to bind s to sa'
-        s.bind(sa)
-        print 'server: listening port 50007'
-        s.listen(5)
-    except socket.error as msg:
-        print 'server: could not bind or no connection'
-        print msg
-        s.close()
-        s = None
-        print 'server: s closed'
-        continue
-    break
-
-if s is None:
-    print 'server: could not open socket'
-    sys.exit(1)
-
-# Now assign the bind socked s to a thread with the following server function
-server_thread = ServerThread('main-server-thread', s)
-print 'created main server thread'
-server_thread.start()
-print 'started main server thread'
-
-# create a server thread
-server_thread = ServerThread('server-thread', s)
-
-# start command line interface
-# now we should send messages over nodes
-cmd_thread = CmdThread('command-line-interface')
-print 'created command line interface thread'
 
