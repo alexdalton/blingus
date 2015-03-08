@@ -11,6 +11,7 @@ import time
 import cmd
 import Queue
 import csv
+import random
 
 # define global queues
 # to be pushed to channel (delay happens in channel)
@@ -84,16 +85,27 @@ class ReceiveThread(threading.Thread):
 
 # delay function thread which generate random delays
 class DelayThread(threading.Thread):
-    def __init__(self):
+    def __init__(self, name, delay_dict):
         threading.Thread.__init__(self)
+	self.name = name
+	self.delay_dict = delay_dict
 
     def run(self):
+	# Simple list to ensure FIFO delivery of messages
+	q_delay = []
         while True:
             if not q_toChannel.empty():
+		# Get delay and timestamp for new message and append to list
                 item = q_toChannel.get()
-                time.sleep(1)
-                q_toSend.put(item)
+		delay_max = int(self.delay_dict[self.name + item[0]])
+	        delay = random.randrange(0, delay_max + 1)
+		q_delay.append([item, delay, time.time()])
 
+	    # Send all messages from head of list that has been delayed long enough
+	    while len(q_delay) and time.time() >= q_delay[0][1] + q_delay[0][2]:
+                item = q_delay.pop(0)
+                q_toSend.put(item[0])
+                
 
 # command line interface thread
 class CmdThread(threading.Thread):
@@ -229,7 +241,7 @@ def main(argv):
     send_thread.start()
 
     # Here start the delay thread
-    delay_thread = DelayThread()
+    delay_thread = DelayThread(node_name, delay_dict)
     print 'created delay thread'
     delay_thread.start()
 
