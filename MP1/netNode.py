@@ -91,20 +91,26 @@ class DelayThread(threading.Thread):
 	self.delay_dict = delay_dict
 
     def run(self):
-	# Simple list to ensure FIFO delivery of messages
-	q_delay = []
+	# Simple channel list to ensure FIFO delivery of messages
+	delayQs = {}
+	delayQs['A'] = []
+	delayQs['B'] = []
+	delayQs['C'] = []
+	delayQs['D'] = []
+
         while True:
             if not q_toChannel.empty():
-		# Get delay and timestamp for new message and append to list
+		# Get delay and timestamp for new message and append to channel list
                 item = q_toChannel.get()
 		delay_max = int(self.delay_dict[self.name + item[0]])
 	        delay = random.randrange(0, delay_max + 1)
-		q_delay.append([item, delay, time.time()])
+		delayQs[item[0]].append([item, delay, time.time()])
 
-	    # Send all messages from head of list that has been delayed long enough
-	    while len(q_delay) and time.time() >= q_delay[0][1] + q_delay[0][2]:
-                item = q_delay.pop(0)
-                q_toSend.put(item[0])
+	    # send out messages from heads of each channel list that have been appropriately delayed
+	    for q_delay in delayQs.values():
+	        while len(q_delay) and time.time() >= q_delay[0][1] + q_delay[0][2]:
+                    item = q_delay.pop(0)
+                    q_toSend.put(item[0])
                 
 
 # command line interface thread
