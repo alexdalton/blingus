@@ -70,7 +70,6 @@ class ReceiveThread(threading.Thread):
 
         while True:
             msg_str, addr = self.sock.recvfrom(1024)
-
             msg = msg_str.split(',')
 
             sender = msg[0]
@@ -96,8 +95,8 @@ class ReceiveThread(threading.Thread):
 class DelayThread(threading.Thread):
     def __init__(self, name, delay_dict):
         threading.Thread.__init__(self)
-	    self.name = name
-	    self.delay_dict = delay_dict
+        self.name = name
+        self.delay_dict = delay_dict
 
     def run(self):
 	    # Simple channel list to ensure FIFO delivery of messages
@@ -111,13 +110,13 @@ class DelayThread(threading.Thread):
             if not q_toChannel.empty():
                 # Get delay and timestamp for new message and append to channel list
                 item = q_toChannel.get()
-		        delay_max = int(self.delay_dict[self.name + item[0]])
-	            delay = random.randrange(0, delay_max + 1)
-		        delayQs[item[0]].append([item, delay, time.time()])
+                delay_max = int(self.delay_dict[self.name + item[0]])
+                delay = random.randrange(0, delay_max + 1)
+                delayQs[item[0]].append([item, delay, time.time()])
 
 	        # send out messages from heads of each channel list that have been appropriately delayed
-	        for q_delay in delayQs.values():
-	            while len(q_delay) and time.time() >= q_delay[0][1] + q_delay[0][2]:
+            for q_delay in delayQs.values():
+                while len(q_delay) and time.time() >= q_delay[0][1] + q_delay[0][2]:
                     item = q_delay.pop(0)
                     q_toSend.put(item[0])
 
@@ -142,7 +141,13 @@ class keyValStore():
         pass
 
     def insertModel3(self, key, value):
-        pass
+        item = (value, time.time())
+        keyVal[key] = item
+        sendString = "insert {0} {1} {2}".format(key, value, item[1])
+        q_toChannel.put(('A', sendString))
+        q_toChannel.put(('B', sendString))
+        q_toChannel.put(('C', sendString))
+        q_toChannel.put(('D', sendString))
 
     def insertModel4(self, key, value):
         pass
@@ -230,15 +235,14 @@ class MP1Shell(cmd.Cmd, keyValStore):
         except ValueError:
             print("key/value must be an integer")
             return
-
         if tp[2] == '1':
-            self.insertModel1(key)
+            self.insertModel1(key, value)
         elif tp[2] == '2':
-            self.insertModel2(key)
+            self.insertModel2(key, value)
         elif tp[2] == '3':
-            self.insertModel3(key)
+            self.insertModel3(key, value)
         elif tp[2] == '4':
-            self.insertModel4(key)
+            self.insertModel4(key, value)
         else:
             print("invalid model")
    
@@ -255,13 +259,13 @@ class MP1Shell(cmd.Cmd, keyValStore):
             return
 
         if tp[2] == '1':
-            self.updateModel1(key)
+            self.updateModel1(key, value)
         elif tp[2] == '2':
-            self.updateModel2(key)
+            self.updateModel2(key, value)
         elif tp[2] == '3':
-            self.updateModel3(key)
+            self.updateModel3(key, value)
         elif tp[2] == '4':
-            self.updateModel4(key)
+            self.updateModel4(key, value)
         else:
             print("invalid model")
    
