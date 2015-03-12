@@ -75,9 +75,6 @@ class ReceiveThread(threading.Thread):
             sender = msg[0]
             data = msg[1]
 
-            # put received message into received queue
-            q_received.put((msg[0], msg[1]))
-
             # find out the maximal delay
             chn = sender + self.name
             if self.delay_dict[chn] is None:
@@ -89,6 +86,34 @@ class ReceiveThread(threading.Thread):
             print 'Received "' + data + '" from ' + sender + ', Max delay is ' \
                 + str(delay_max) + 's, system time is ' + \
                 time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
+
+            items = data.split()
+            if items[0] == 'insert':
+                keyVal[int(items[1])] = (int(items[2]), float(items[3]))
+                q_toChannel.put((sender, 'ack {0}'.format(data)))
+            elif items[0] == 'update':
+                key = int(items[1])
+                if key in keyVal.keys():
+                    keyVal[key] = (int(items[2]), float(items[3]))
+                else:
+                    print("Can't update key {0}, doesn't exist".format(key))
+                q_toChannel.put((sender, 'ack {0}'.format(data)))
+            elif items[0] == 'get':
+                key = int(items[1])
+                if key in keyVal.keys():
+                    q_toChannel.put((sender, 'ack {0}; {1}; {2}'.format(data, keyVal[key][0], keyVal[key][1])))
+                else:
+                    q_toChannel.put((sender, 'ack {0}; {1}; {2}'.format(data, 0, -1.0)))
+                    print("Can't get key {0}, doesn't exist".format(key))
+            elif items[0] == 'delete':
+                key = int(items[1])
+                if key in keyVal.keys():
+                    del keyVal[key]
+                else:
+                    print("Can't delete key {0}, doesn't exist".format(key))
+            elif items[0] == 'ack':
+                q_received.put(data)
+
 
 
 # delay function thread which generate random delays
@@ -129,10 +154,37 @@ class keyValStore():
         pass
 
     def getModel3(self, key):
-        pass    
+        sendString = "get {0}".format(key)
+        q_toChannel.put(('A', sendString))
+        q_toChannel.put(('B', sendString))
+        q_toChannel.put(('C', sendString))
+        q_toChannel.put(('D', sendString))
+
+        while(True):
+            if not q_received.empty():
+                items = q_received.get().split(';')
+                if len(items) > 2 and items[0] == 'ack ' + sendString:
+                    print items[1]
+                    return int(items[1])
+
 
     def getModel4(self, key):
-        pass
+        sendString = "get {0}".format(key)
+        q_toChannel.put(('A', sendString))
+        q_toChannel.put(('B', sendString))
+        q_toChannel.put(('C', sendString))
+        q_toChannel.put(('D', sendString))
+        r = 0
+        x = []
+        while(r != 2):
+            if not q_received.empty():
+                items = q_received.get().split(';')
+                if len(items) > 2 and items[0] == 'ack ' + sendString:
+                    x.append((float(items[2]), int(items[1])))
+                    r = r + 1
+        print max(x)[1]
+        return max(x)[1]
+
 
     def insertModel1(self, key, value):
         pass
@@ -141,28 +193,62 @@ class keyValStore():
         pass
 
     def insertModel3(self, key, value):
-        item = (value, time.time())
-        keyVal[key] = item
-        sendString = "insert {0} {1} {2}".format(key, value, item[1])
+        sendString = "insert {0} {1} {2}".format(key, value, time.time())
         q_toChannel.put(('A', sendString))
         q_toChannel.put(('B', sendString))
         q_toChannel.put(('C', sendString))
         q_toChannel.put(('D', sendString))
+        w = 0
+        while(w != 1):
+            if not q_received.empty():
+                item = q_received.get()
+                if item == 'ack ' + sendString:
+                    w = w + 1
 
     def insertModel4(self, key, value):
-        pass
+        sendString = "insert {0} {1} {2}".format(key, value, time.time())
+        q_toChannel.put(('A', sendString))
+        q_toChannel.put(('B', sendString))
+        q_toChannel.put(('C', sendString))
+        q_toChannel.put(('D', sendString))
+        w = 0
+        while(w != 2):
+            if not q_received.empty():
+                item = q_received.get()
+                if item == 'ack ' + sendString:
+                    w = w + 1
 
     def updateModel1(self, key, value):
         pass
 
     def updateModel2(self, key, value):
-        pass       
+        pass
 
     def updateModel3(self, key, value):
-        pass
+        sendString = "update {0} {1} {2}".format(key, value, time.time())
+        q_toChannel.put(('A', sendString))
+        q_toChannel.put(('B', sendString))
+        q_toChannel.put(('C', sendString))
+        q_toChannel.put(('D', sendString))
+        k = 0
+        while(k != 1):
+            if not q_received.empty():
+                item = q_received.get()
+                if item == 'ack ' + sendString:
+                    k = k + 1
 
     def updateModel4(self, key, value):
-        pass
+        sendString = "update {0} {1} {2}".format(key, value, time.time())
+        q_toChannel.put(('A', sendString))
+        q_toChannel.put(('B', sendString))
+        q_toChannel.put(('C', sendString))
+        q_toChannel.put(('D', sendString))
+        k = 0
+        while(k != 2):
+            if not q_received.empty():
+                item = q_received.get()
+                if item == 'ack ' + sendString:
+                    k = k + 1
 
 
 # command line interface thread
@@ -191,20 +277,46 @@ class MP1Shell(cmd.Cmd, keyValStore):
 
     # ------- basic commands -------------
     def do_delete(self, arg):
-        pass
+        tp = arg.split()
+        if len(tp) < 1:
+            print("not enough parameters")
+            return
+        try:
+            key = int(tp[0])
+        except ValueError:
+            print("key must be an integer")
+            return
+
+        sendString = "delete {0}".format(key)
+        q_toChannel.put(('A', sendString))
+        q_toChannel.put(('B', sendString))
+        q_toChannel.put(('C', sendString))
+        q_toChannel.put(('D', sendString))
 
     def do_delay(self, arg):
-        pass
+        tp = arg.split()
+        if len(tp) < 1:
+            print("not enough parameters")
+            return
+        try:
+            wait = float(tp[0])
+        except ValueError:
+            print("time must be a number")
+            return
+        start = time.time()
+        while(time.time() - start < wait):
+            pass
 
     def do_search(self, arg):
         pass
 
-    def do_show(self, arg):
-        pass
+    def do_showall(self, arg):
+        for k, v in keyVal.iteritems():
+            print(k, v[0])
 
     def do_get(self, arg):
         tp = arg.split()
-        if len(tp) < 1:
+        if len(tp) < 2:
             print("not enough parameters")
             return
         try:
@@ -226,7 +338,7 @@ class MP1Shell(cmd.Cmd, keyValStore):
 
     def do_insert(self, arg):
         tp = arg.split()
-        if len(tp) < 2:
+        if len(tp) < 3:
             print("not enough parameters")
             return
         try:
@@ -245,10 +357,10 @@ class MP1Shell(cmd.Cmd, keyValStore):
             self.insertModel4(key, value)
         else:
             print("invalid model")
-   
+
     def do_update(self, arg):
         tp = arg.split()
-        if len(tp) < 2:
+        if len(tp) < 3:
             print("not enough parameters")
             return
         try:
@@ -268,7 +380,7 @@ class MP1Shell(cmd.Cmd, keyValStore):
             self.updateModel4(key, value)
         else:
             print("invalid model")
-   
+
     def do_Send(self, arg):
         """
         :param arg: Send Message Destination
