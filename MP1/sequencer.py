@@ -34,15 +34,17 @@ class SendThread(threading.Thread):
                 item = q_toSend.get()
                 dest = self.node_dict[item[0]]
 
+
                 UDP_IP = dest[0]
                 UDP_PORT = int(dest[1])
+                # print 'length of item is {0}'.format(len(item))
                 MESSAGE = self.node_name + ';' + item[1]
 
                 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 sock.sendto(MESSAGE, (UDP_IP, UDP_PORT))
 
             else:
-                print 'wait to send'
+                # print 'wait to send'
                 time.sleep(0.1)
 
 
@@ -66,18 +68,20 @@ class ReceiveThread(threading.Thread):
             sender = msg[0]
             data = msg[1]
             msg_id = msg[2]
-            self.s_g += 1
 
             # send out string to node
             # <S; data; msg_id; s_g>
-            sendString = "{0}; {1}; {2}".format( data, msg_id, self.s_g)
+            sendString = "{0};{1};{2}".format( data, msg_id, self.s_g)
+
+            # to be consistent with the ABCD side
+            self.s_g += 1
 
             # send out the message to all four nodes as a tuple
             # no delay
-            q_toSend.put('A', sendString)
-            q_toSend.put('B', sendString)
-            q_toSend.put('C', sendString)
-            q_toSend.put('D', sendString)
+            q_toSend.put(('A', sendString))
+            q_toSend.put(('B', sendString))
+            q_toSend.put(('C', sendString))
+            q_toSend.put(('D', sendString))
 
             print 'broadcasted msg {0} with sequencer {1}'.format(msg_id, self.s_g)
 

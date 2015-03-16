@@ -355,9 +355,9 @@ class keyValStore():
 
                 print 'getModel1, deque :{0}:'.format(tup)
 
+                items = tup[1].split()
                 if tup[0] != msg_id:
                     # here process the message happened before my msg
-                    items = tup[1]
                     if items[0] == 'insert':
                         keyVal[int(items[2])] = (int(items[3]), float(items[4]))
                     # elif items[0] == 'delete':
@@ -366,6 +366,7 @@ class keyValStore():
                     #         del keyVal[k]
                     #     else:
                     #         print("Can't delete key {0}, doesn't exist".format(k))
+                        print 'getModel1: added to keyValue :{0}:'.format(int(items[2]))
                     elif items[0] == 'update':
                         k = int(items[2])
                         if k in keyVal.keys():
@@ -376,7 +377,6 @@ class keyValStore():
                         pass
                         # do nothing since will not change my values
                 elif tup[0] == msg_id:
-                    items = tup[1].split()
                     k = int(items[2])
 
                     print 'getkey :{0}:'.format(k)
@@ -448,8 +448,6 @@ class keyValStore():
             if not q_delivered.empty():
                 tup = q_delivered.get()
 
-                print tup
-
                 items = tup[1].split()
                 if tup[0] != msg_id:
                     # here process the message happened before my msg
@@ -461,6 +459,7 @@ class keyValStore():
                     #         del keyVal[k]
                     #     else:
                     #         print("Can't delete key {0}, doesn't exist".format(k))
+                        print 'getModel1: added to keyValue :{0}:'.format(int(items[2]))
                     elif items[0] == 'update':
                         k = int(items[2])
                         if k in keyVal.keys():
@@ -500,8 +499,8 @@ class keyValStore():
         while True:
             if not q_delivered.empty():
                 tup = q_delivered.get()
-                items = tup[1].split()
 
+                items = tup[1].split()
 
                 if tup[0] != msg_id:
                     # here process the message happened before my msg
