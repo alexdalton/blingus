@@ -3,20 +3,30 @@ A, 127.0.0.1, 50001
 B, 127.0.0.1, 50002
 C, 127.0.0.1, 50003
 D, 127.0.0.1, 50004
+S, 127.0.0.1, 50005
 Channel, Max Delay
 AA, 0
 AB, 3
 AC, 3
 AD, 3
+AS, 0
 BB, 0
 BA, 4
 BC, 4
 BD, 4
+BS, 0
 CC, 0
 CA, 5
 CB, 5
 CD, 5
+CS, 0
 DD, 0
 DA, 6
 DB, 6
 DC, 5
+DS, 0
+SS, 0
+SA, 0
+SB, 0
+SC, 0
+SD, 0

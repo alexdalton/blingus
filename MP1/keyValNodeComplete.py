@@ -12,6 +12,7 @@ import cmd
 import Queue
 import csv
 import random
+import json
 
 # define global queues
 # to be pushed to channel (delay happens in channel)
@@ -27,6 +28,80 @@ keyVal = {}
 
 # received messages for this node
 q_received = Queue.Queue()
+
+# received messages for the repair thread
+q_repair = Queue.Queue()
+
+# received messages from a search operation
+q_search = Queue.Queue()
+
+
+# self node name and msg_cnt to define the unique msg_id
+# msg_id = A12 g_node_name + g_msg_cnt
+# msg_id is not the number sent by sequencer
+g_node_name = ''
+g_msg_cnt = 0
+
+g_r_g = 0
+
+# hold back queue of messages, implemented as a dict [msg_id] = msg
+dict_holdback = {}
+
+# the order of messages that should be delivered defined by sequencer
+# [s_g] = msg_id
+dict_order = {}
+
+# delivered queue from TO Multi-cast
+q_delivered = Queue.Queue()
+
+
+
+# thread that fixes consistencies for models 3 and 4
+class repairThread(threading.Thread):
+    def __init__(self):
+        threading.Thread.__init__(self)
+
+    def run(self):
+        while True:
+            # wake up every 3 seconds to repair
+            time.sleep(3)
+
+            # send repair message to all nodes
+            nodeKeyVals = {}
+            sendString = "repair 3"
+            q_toChannel.put(('A', sendString))
+            q_toChannel.put(('B', sendString))
+            q_toChannel.put(('C', sendString))
+            q_toChannel.put(('D', sendString))
+
+            # receive key-val stores from all 4 nodes and mark inconsistent keys
+            inconsistents = {}
+            for i in range(0, 4):
+                items = q_repair.get(block=True).split('|')
+                theirKeyVal = json.loads(items[1])
+                for k, v in theirKeyVal.iteritems():
+                    key = int(k)
+                    value = int(v[0])
+                    timestamp = float(v[1])
+                    if key not in nodeKeyVals.keys():
+                        nodeKeyVals[key] = []
+                    nodeKeyVals[key].append((timestamp, value))
+                    if len(nodeKeyVals[key]) > 1 and nodeKeyVals[key][-1] != nodeKeyVals[key][0]:
+                        inconsistents[key] = 1
+
+            # if node is missing a key mark that as inconsistent key
+            for k, v in nodeKeyVals.iteritems():
+                if len(v) < 4:
+                    inconsistents[k] == 1
+
+            # for all inconsistent keys send a write to all nodes with most recent value
+            for key in inconsistents.keys():
+                newest = max(nodeKeyVals[key])
+                sendString = "repairWrite 3 {0} {1} {2}".format(k, newest[1], newest[0]) # make sure this only writes if the timestamp is >= what's already in keyVal
+                q_toChannel.put(('A', sendString))
+                q_toChannel.put(('B', sendString))
+                q_toChannel.put(('C', sendString))
+                q_toChannel.put(('D', sendString))
 
 
 # the client thread which constantly read q_toSend and send out messages
@@ -46,7 +121,7 @@ class SendThread(threading.Thread):
 
                 UDP_IP = dest[0]
                 UDP_PORT = int(dest[1])
-                MESSAGE = self.node_name + ',' + item[1]
+                MESSAGE = self.node_name + ';' + item[1]
 
                 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 sock.sendto(MESSAGE, (UDP_IP, UDP_PORT))
@@ -64,16 +139,30 @@ class ReceiveThread(threading.Thread):
         self.sock = sock
         self.node_dict = node_dict
         self.delay_dict = delay_dict
+        self.repairStarted = False
 
     def run(self):
+        global g_r_g
         # print 'node ' + self.name + ' starts listening:'
 
         while True:
             msg_str, addr = self.sock.recvfrom(1024)
-            msg = msg_str.split(',')
+            msg = msg_str.split(';')
 
             sender = msg[0]
             data = msg[1]
+
+            # Model 1 and 2:
+            #   <sender; data; msg_id> from ABCD
+            #   <sender; data; msg_id; s_g> from sequencer
+            # For model 3 and 4
+            #   <sender, data>
+            if len(msg) == 3:
+                msg_id = msg[2]
+            elif len(msg) == 4:
+                msg_id = msg[2]
+                s_g = msg[3]
+
 
             # find out the maximal delay
             chn = sender + self.name
@@ -83,36 +172,103 @@ class ReceiveThread(threading.Thread):
                 delay_max = int(self.delay_dict[chn])
 
             # print message
-            print 'Received "' + data + '" from ' + sender + ', Max delay is ' \
-                + str(delay_max) + 's, system time is ' + \
-                time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
+            # print 'Received "' + data + '" from ' + sender + ', Max delay is ' \
+            #     + str(delay_max) + 's, system time is ' + \
+            #     time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
 
             items = data.split()
-            if items[0] == 'insert':
-                keyVal[int(items[1])] = (int(items[2]), float(items[3]))
-                q_toChannel.put((sender, 'ack {0}'.format(data)))
-            elif items[0] == 'update':
-                key = int(items[1])
-                if key in keyVal.keys():
-                    keyVal[key] = (int(items[2]), float(items[3]))
-                else:
-                    print("Can't update key {0}, doesn't exist".format(key))
-                q_toChannel.put((sender, 'ack {0}'.format(data)))
-            elif items[0] == 'get':
-                key = int(items[1])
-                if key in keyVal.keys():
-                    q_toChannel.put((sender, 'ack {0}; {1}; {2}'.format(data, keyVal[key][0], keyVal[key][1])))
-                else:
-                    q_toChannel.put((sender, 'ack {0}; {1}; {2}'.format(data, 0, -1.0)))
-                    print("Can't get key {0}, doesn't exist".format(key))
-            elif items[0] == 'delete':
+
+            # if delete just delete the key
+            if items[0] == 'delete':
                 key = int(items[1])
                 if key in keyVal.keys():
                     del keyVal[key]
                 else:
                     print("Can't delete key {0}, doesn't exist".format(key))
-            elif items[0] == 'ack':
-                q_received.put(data)
+                continue
+
+            if items[0] == 'search':
+                key = int(items[1])
+                if key in keyVal.keys():
+                    q_toChannel.put((sender, 'searchAck {0}'.format(self.name)))
+                else:
+                    q_toChannel.put((sender, 'searchAck F'))
+                continue
+
+            if items[0] == 'searchAck':
+                q_search.put(data)
+                continue
+
+    	    # models 3 & 4 do stuff with received messages
+            if int(items[1]) > 2:
+                # start the repair thread if not started(only need one)
+                if(self.name == 'A' and self.repairStarted == False):
+                    repair_thread = repairThread()
+                    repair_thread.start()
+                    self.repairStarted = True
+
+    	        # if insert, insert into keyVal store and send sender an ack
+                if items[0] == 'insert':
+                    keyVal[int(items[2])] = (int(items[3]), float(items[4]))
+                    q_toChannel.put((sender, 'ack 3 {0}'.format(data)))
+
+    	        # if update try to update keyVal store and send sender an ack
+                elif items[0] == 'update':
+                    key = int(items[2])
+                    if key in keyVal.keys():
+                        keyVal[key] = (int(items[3]), float(items[4]))
+                    else:
+                        print("Can't update key {0}, doesn't exist".format(key))
+                    q_toChannel.put((sender, 'ack 3 {0}'.format(data)))
+
+    	        # if get, try to get the value and return it in an ack to the sender
+                elif items[0] == 'get':
+                    key = int(items[2])
+                    if key in keyVal.keys():
+                        q_toChannel.put((sender, 'ack 3 {0}| {1}| {2}'.format(data, keyVal[key][0], keyVal[key][1])))
+                    else:
+                        q_toChannel.put((sender, 'ack 3 {0}| {1}| {2}'.format(data, 0, -1.0)))
+                        print("Can't get key {0}, doesn't exist".format(key))
+
+                #if repair send the information for the key-value store
+                elif items[0] == 'repair':
+                    q_toChannel.put((sender, 'repairAck 3 |' + json.dumps(keyVal)))
+
+    	        # if an ack put into received queue to be handled by the command thread
+                elif items[0] == 'ack':
+                    q_received.put(data)
+
+                elif items[0] == 'repairAck':
+                    q_repair.put(data)
+
+                elif items[0] == 'repairWrite':
+                    key = int(items[2])
+                    value = int(items[3])
+                    timestamp = float(items[4])
+                    if (key in keyVal.keys() and keyVal[key][1] <= timestamp) or (key not in keyVal.keys()):
+                        keyVal[key] = (value, timestamp)
+
+            elif int(items[1]) <= 2:
+                # if model 1 or 2. Put delievered messages in q_delivered
+                # in keyValue functions, read q_delivered for linearizability
+                # and sequential consisitency
+                # implement total ordering
+                if len(msg) == 3:
+                    # sent from ABCD
+                    dict_holdback[msg[2]] = msg[1]
+                elif len(msg) == 4:
+                    dict_order[msg[3]] = msg[2]
+
+                # execute when r_g = s_g, and msg exist
+                key = str(g_r_g)
+                if key in dict_order.keys():
+                    # put < msg_id, its data>
+                    tmp_msg_id = dict_order[key]
+                    q_delivered.put((tmp_msg_id, dict_holdback[tmp_msg_id]))
+                    del dict_order[key]
+                    del dict_holdback[tmp_msg_id]
+                    g_r_g += 1
+
 
 
 
@@ -148,13 +304,54 @@ class DelayThread(threading.Thread):
 
 class keyValStore():
     def getModel1(self, key):
-        pass
+        # B-multicast <m, i>
+        global g_msg_cnt
+        global g_node_name
+        g_msg_cnt += 1
+
+        # generate message id
+        msg_id = g_node_name + str(g_msg_cnt)
+
+        #<sender; data; msg_id>
+        sendString = "get 1 {0}; {1}".format(key, msg_id)
+
+        q_toChannel.put(('A', sendString))
+        q_toChannel.put(('B', sendString))
+        q_toChannel.put(('C', sendString))
+        q_toChannel.put(('D', sendString))
+        q_toChannel.put(('S', sendString))
+
+        # wait until own get message is delivered
+        while True:
+            if not q_delivered.empty():
+                tup = q_delivered.get()
+                if tup[0] != msg_id:
+                    # here process the message happened before my msg
+                    items = tup[1]
+                    if items[0] == 'insert':
+                        keyVal[int(items[2])] = (int(items[3]), float(items[4]))
+                    elif items[0] == 'update':
+                        key = int(items[2])
+                        if key in keyVal.keys():
+                            keyVal[key] = (int(items[3]), float(items[4]))
+                        else:
+                            print("Can't update key {0}, doesn't exist".format(key))
+                    elif items[0] == 'get':
+                        pass
+                        # do nothing since will not change my values
+                elif tup[0] == msg_id:
+                    items = tup[1].split()
+                    key = items[2]
+                    print keyVal[key]
+                    return keyVal[key]
 
     def getModel2(self, key):
-        pass
+        # immediately return the values
+        print keyVal[key]
+        return keyVal[key]
 
     def getModel3(self, key):
-        sendString = "get {0}".format(key)
+        sendString = "get 3 {0}".format(key)
         q_toChannel.put(('A', sendString))
         q_toChannel.put(('B', sendString))
         q_toChannel.put(('C', sendString))
@@ -162,14 +359,13 @@ class keyValStore():
 
         while(True):
             if not q_received.empty():
-                items = q_received.get().split(';')
-                if len(items) > 2 and items[0] == 'ack ' + sendString:
+                items = q_received.get().split('|')
+                if len(items) > 2 and items[0] == 'ack 3 ' + sendString:
                     print items[1]
                     return int(items[1])
 
-
     def getModel4(self, key):
-        sendString = "get {0}".format(key)
+        sendString = "get 4 {0}".format(key)
         q_toChannel.put(('A', sendString))
         q_toChannel.put(('B', sendString))
         q_toChannel.put(('C', sendString))
@@ -178,8 +374,8 @@ class keyValStore():
         x = []
         while(r != 2):
             if not q_received.empty():
-                items = q_received.get().split(';')
-                if len(items) > 2 and items[0] == 'ack ' + sendString:
+                items = q_received.get().split('|')
+                if len(items) > 2 and items[0] == 'ack 3 ' + sendString:
                     x.append((float(items[2]), int(items[1])))
                     r = r + 1
         print max(x)[1]
@@ -187,13 +383,92 @@ class keyValStore():
 
 
     def insertModel1(self, key, value):
-        pass
+        global g_msg_cnt
+        global g_node_name
+        g_msg_cnt += 1
+
+        # generate message id
+        msg_id = g_node_name + str(g_msg_cnt)
+
+        #<sender; data; msg_id>
+        sendString = "insert 1 {0} {1} {2}; {3}".format(key, value, time.time(), msg_id)
+
+        q_toChannel.put(('A', sendString))
+        q_toChannel.put(('B', sendString))
+        q_toChannel.put(('C', sendString))
+        q_toChannel.put(('D', sendString))
+        q_toChannel.put(('S', sendString))
+
+        # wait until own insert msg comes
+        while True:
+            if not q_delivered.empty():
+                tup = q_delivered.get()
+                items = tup[1].split()
+                if tup[0] != msg_id:
+                    # here process the message happened before my msg
+                    if items[0] == 'insert':
+                        keyVal[int(items[2])] = (int(items[3]), float(items[4]))
+                    elif items[0] == 'update':
+                        k = int(items[2])
+                        if k in keyVal.keys():
+                            keyVal[k] = (int(items[3]), float(items[4]))
+                        else:
+                            print("Can't update key {0}, doesn't exist".format(k))
+                    elif items[0] == 'get':
+                        pass
+                        # do nothing since will not change my values
+                elif tup[0] == msg_id:
+                    k = int(items[2])
+                    keyVal[k] = (int(items[3]), float(items[4]))
+                    print 'inserted ', k, keyVal[k]
+                    return keyVal[k]
+
+
 
     def insertModel2(self, key, value):
-        pass
+        global g_msg_cnt
+        global g_node_name
+        g_msg_cnt += 1
+
+        # generate message id
+        msg_id = g_node_name + str(g_msg_cnt)
+
+        #<sender; data; msg_id>
+        sendString = "insert 2 {0} {1} {2}; {3}".format(key, value, time.time(), msg_id)
+
+        q_toChannel.put(('A', sendString))
+        q_toChannel.put(('B', sendString))
+        q_toChannel.put(('C', sendString))
+        q_toChannel.put(('D', sendString))
+        q_toChannel.put(('S', sendString))
+
+        # wait until own insert msg comes
+        while True:
+            if not q_delivered.empty():
+                tup = q_delivered.get()
+                items = tup[1].split()
+                if tup[0] != msg_id:
+                    # here process the message happened before my msg
+                    if items[0] == 'insert':
+                        keyVal[int(items[2])] = (int(items[3]), float(items[4]))
+                    elif items[0] == 'update':
+                        k = int(items[2])
+                        if k in keyVal.keys():
+                            keyVal[k] = (int(items[3]), float(items[4]))
+                        else:
+                            print("Can't update key {0}, doesn't exist".format(k))
+                    elif items[0] == 'get':
+                        pass
+                        # do nothing since will not change my values
+                elif tup[0] == msg_id:
+                    k = int(items[2])
+                    keyVal[k] = (int(items[3]), float(items[4]))
+                    print 'inserted ', k, keyVal[k]
+                    return keyVal[k]
+
 
     def insertModel3(self, key, value):
-        sendString = "insert {0} {1} {2}".format(key, value, time.time())
+        sendString = "insert 3 {0} {1} {2}".format(key, value, time.time())
         q_toChannel.put(('A', sendString))
         q_toChannel.put(('B', sendString))
         q_toChannel.put(('C', sendString))
@@ -202,11 +477,11 @@ class keyValStore():
         while(w != 1):
             if not q_received.empty():
                 item = q_received.get()
-                if item == 'ack ' + sendString:
+                if item == 'ack 3 ' + sendString:
                     w = w + 1
 
     def insertModel4(self, key, value):
-        sendString = "insert {0} {1} {2}".format(key, value, time.time())
+        sendString = "insert 4 {0} {1} {2}".format(key, value, time.time())
         q_toChannel.put(('A', sendString))
         q_toChannel.put(('B', sendString))
         q_toChannel.put(('C', sendString))
@@ -215,17 +490,101 @@ class keyValStore():
         while(w != 2):
             if not q_received.empty():
                 item = q_received.get()
-                if item == 'ack ' + sendString:
+                if item == 'ack 3 ' + sendString:
                     w = w + 1
 
     def updateModel1(self, key, value):
-        pass
+        global g_msg_cnt
+        global g_node_name
+        g_msg_cnt += 1
+
+        # generate message id
+        msg_id = g_node_name + str(g_msg_cnt)
+
+        #<sender; data; msg_id>
+        sendString = "update 1 {0} {1} {2}; {3}".format(key, value, time.time(), msg_id)
+
+        q_toChannel.put(('A', sendString))
+        q_toChannel.put(('B', sendString))
+        q_toChannel.put(('C', sendString))
+        q_toChannel.put(('D', sendString))
+        q_toChannel.put(('S', sendString))
+
+        # wait until own insert msg comes
+        while True:
+            if not q_delivered.empty():
+                tup = q_delivered.get()
+                items = tup[1].split()
+                if tup[0] != msg_id:
+                    # here process the message happened before my msg
+                    if items[0] == 'insert':
+                        keyVal[int(items[2])] = (int(items[3]), float(items[4]))
+                    elif items[0] == 'update':
+                        k = int(items[2])
+                        if k in keyVal.keys():
+                            keyVal[k] = (int(items[3]), float(items[4]))
+                        else:
+                            print("Can't update key {0}, doesn't exist".format(k))
+                    elif items[0] == 'get':
+                        pass
+                        # do nothing since will not change my values
+                elif tup[0] == msg_id:
+                    k = int(items[2])
+                    if k in keyVal.keys():
+                            keyVal[k] = (int(items[3]), float(items[4]))
+                    else:
+                        print("Can't update key {0}, doesn't exist".format(k))
+
+                    print 'updated ', k, keyVal[k]
+                    return keyVal[k]
 
     def updateModel2(self, key, value):
-        pass
+        global g_msg_cnt
+        global g_node_name
+        g_msg_cnt += 1
+
+        # generate message id
+        msg_id = g_node_name + str(g_msg_cnt)
+
+        #<sender; data; msg_id>
+        sendString = "update 2 {0} {1} {2}; {3}".format(key, value, time.time(), msg_id)
+
+        q_toChannel.put(('A', sendString))
+        q_toChannel.put(('B', sendString))
+        q_toChannel.put(('C', sendString))
+        q_toChannel.put(('D', sendString))
+        q_toChannel.put(('S', sendString))
+
+        # wait until own insert msg comes
+        while True:
+            if not q_delivered.empty():
+                tup = q_delivered.get()
+                items = tup[1].split()
+                if tup[0] != msg_id:
+                    # here process the message happened before my msg
+                    if items[0] == 'insert':
+                        keyVal[int(items[2])] = (int(items[3]), float(items[4]))
+                    elif items[0] == 'update':
+                        k = int(items[2])
+                        if k in keyVal.keys():
+                            keyVal[k] = (int(items[3]), float(items[4]))
+                        else:
+                            print("Can't update key {0}, doesn't exist".format(k))
+                    elif items[0] == 'get':
+                        pass
+                        # do nothing since will not change my values
+                elif tup[0] == msg_id:
+                    k = int(items[2])
+                    if k in keyVal.keys():
+                            keyVal[k] = (int(items[3]), float(items[4]))
+                    else:
+                        print("Can't update key {0}, doesn't exist".format(k))
+
+                    print 'updated ', k, keyVal[k]
+                    return keyVal[k]
 
     def updateModel3(self, key, value):
-        sendString = "update {0} {1} {2}".format(key, value, time.time())
+        sendString = "update 3 {0} {1} {2}".format(key, value, time.time())
         q_toChannel.put(('A', sendString))
         q_toChannel.put(('B', sendString))
         q_toChannel.put(('C', sendString))
@@ -234,21 +593,51 @@ class keyValStore():
         while(k != 1):
             if not q_received.empty():
                 item = q_received.get()
-                if item == 'ack ' + sendString:
+                if item == 'ack 3 ' + sendString:
                     k = k + 1
 
     def updateModel4(self, key, value):
-        sendString = "update {0} {1} {2}".format(key, value, time.time())
+        sendString = "update 4 {0} {1} {2}".format(key, value, time.time())
         q_toChannel.put(('A', sendString))
         q_toChannel.put(('B', sendString))
         q_toChannel.put(('C', sendString))
         q_toChannel.put(('D', sendString))
         k = 0
-        while(k != 2):
+        while (k != 2):
             if not q_received.empty():
                 item = q_received.get()
-                if item == 'ack ' + sendString:
+                if item == 'ack 3 ' + sendString:
                     k = k + 1
+
+    def delete(self, key):
+        sendString = "delete {0}".format(key)
+        q_toChannel.put(('A', sendString))
+        q_toChannel.put(('B', sendString))
+        q_toChannel.put(('C', sendString))
+        q_toChannel.put(('D', sendString))
+
+    def delay(self, delayTime):
+        start = time.time()
+        while(time.time() - start < delayTime):
+            pass
+
+    def showall(self):
+        for k, v in keyVal.iteritems():
+            print(k, v[0])
+
+    def search(self, key):
+        sendString = "search {0}".format(key)
+        q_toChannel.put(('A', sendString))
+        q_toChannel.put(('B', sendString))
+        q_toChannel.put(('C', sendString))
+        q_toChannel.put(('D', sendString))
+
+        servers = []
+        for i in range(0, 4):
+            items = q_search.get(block=True).split()
+            if items[1] != 'F':
+                servers.append(items[1])
+        print servers
 
 
 # command line interface thread
@@ -276,6 +665,25 @@ class MP1Shell(cmd.Cmd, keyValStore):
     file = None
 
     # ------- basic commands -------------
+    def do_do(self, arg):
+        doFile = open(arg, "r")
+        for line in doFile:
+            item = line.split()
+            if item[0] == 'insert':
+                self.do_insert(line[7:])
+            if item[0] == 'update':
+                self.do_update(line[7:])
+            if item[0] == 'get':
+                self.do_get(line[4:])
+            if item[0] == 'delete':
+                self.do_delete(line[7:])
+            if item[0] == 'delay':
+                self.do_delay(line[6:])
+            if item[0] == 'search':
+                self.do_search(line[7:])
+            if item[0] == 'show-all':
+                self.do_showall(line[9:])
+
     def do_delete(self, arg):
         tp = arg.split()
         if len(tp) < 1:
@@ -286,12 +694,7 @@ class MP1Shell(cmd.Cmd, keyValStore):
         except ValueError:
             print("key must be an integer")
             return
-
-        sendString = "delete {0}".format(key)
-        q_toChannel.put(('A', sendString))
-        q_toChannel.put(('B', sendString))
-        q_toChannel.put(('C', sendString))
-        q_toChannel.put(('D', sendString))
+        self.delete(key)
 
     def do_delay(self, arg):
         tp = arg.split()
@@ -303,16 +706,22 @@ class MP1Shell(cmd.Cmd, keyValStore):
         except ValueError:
             print("time must be a number")
             return
-        start = time.time()
-        while(time.time() - start < wait):
-            pass
+        self.delay(wait)
 
     def do_search(self, arg):
-        pass
+        tp = arg.split()
+        if len(tp) < 1:
+            print("not enough parameters")
+            return
+        try:
+            key = int(tp[0])
+        except ValueError:
+            print("key must be an integer")
+            return
+        self.search(key)
 
     def do_showall(self, arg):
-        for k, v in keyVal.iteritems():
-            print(k, v[0])
+        self.showall()
 
     def do_get(self, arg):
         tp = arg.split()
@@ -479,11 +888,6 @@ def main(argv):
     print 'created receive thread'
     recv_thread.start()
 
-    # Here start the thread for command line interface
-    shell_thread = CmdThread('MP1Shell')
-    print 'created shell thread'
-    shell_thread.start()
-
     # Here start the thread for checking if should send out messages
     send_thread = SendThread(node_dict, node_name)
     print 'created send thread'
@@ -494,9 +898,10 @@ def main(argv):
     print 'created delay thread'
     delay_thread.start()
 
+    # Here start the thread for command line interface
+    shell_thread = CmdThread('MP1Shell')
+    print 'created shell thread'
+    shell_thread.start()
 
 if __name__ == '__main__':
     main(sys.argv[1:])
-
-
-
