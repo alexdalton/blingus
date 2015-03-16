@@ -1,0 +1,10 @@
+insert 6 25 4
+delay 0.1
+insert 18 1 3
+show-all
+delay 0.3
+get 17 3
+delay 0.5
+update 5 7 4
+delay 0.6
+search 6
