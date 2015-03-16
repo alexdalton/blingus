@@ -251,25 +251,39 @@ class ReceiveThread(threading.Thread):
                         keyVal[key] = (value, timestamp)
 
             elif int(items[1]) <= 2:
-                # if model 1 or 2. Put delievered messages in q_delivered
+                # if model 1 or 2. Put delivered messages in q_delivered
                 # in keyValue functions, read q_delivered for linearizability
-                # and sequential consisitency
+                # and sequential consistency
                 # implement total ordering
                 if len(msg) == 3:
                     # sent from ABCD
                     dict_holdback[msg[2]] = msg[1]
+                    print 'put {0}:={1} in holdback dict'.format(msg[2], msg[1])
                 elif len(msg) == 4:
                     dict_order[msg[3]] = msg[2]
+                    print 'put {0}:={1} in order dict'.format(msg[3], msg[2])
 
                 # execute when r_g = s_g, and msg exist
                 key = str(g_r_g)
+                print 'to deliver :{0}:'.format(key)
+                print dict_order.keys()
+
+
                 if key in dict_order.keys():
                     # put < msg_id, its data>
                     tmp_msg_id = dict_order[key]
-                    q_delivered.put((tmp_msg_id, dict_holdback[tmp_msg_id]))
-                    del dict_order[key]
-                    del dict_holdback[tmp_msg_id]
-                    g_r_g += 1
+
+                    # make sure the message is received
+                    # otherwise wait
+                    if tmp_msg_id in dict_holdback:
+                        print 'tmp_msg_id:={0}'.format(tmp_msg_id)
+                        print dict_holdback.keys()
+                        q_delivered.put((tmp_msg_id, dict_holdback[tmp_msg_id]))
+
+                        print 'put {0}:={1} in q_delivered'.format(tmp_msg_id, dict_holdback[tmp_msg_id])
+                        del dict_order[key]
+                        del dict_holdback[tmp_msg_id]
+                        g_r_g += 1
 
 
 
@@ -316,7 +330,7 @@ class keyValStore():
         msg_id = g_node_name + str(g_msg_cnt)
 
         #<sender; data; msg_id>
-        sendString = "get 1 {0}; {1}".format(key, msg_id)
+        sendString = "get 1 {0};{1}".format(key, msg_id)
 
         q_toChannel.put(('A', sendString))
         q_toChannel.put(('B', sendString))
@@ -328,6 +342,9 @@ class keyValStore():
         while True:
             if not q_delivered.empty():
                 tup = q_delivered.get()
+
+                print 'getModel1, deque :{0}:'.format(tup)
+
                 if tup[0] != msg_id:
                     # here process the message happened before my msg
                     items = tup[1]
@@ -351,6 +368,10 @@ class keyValStore():
                 elif tup[0] == msg_id:
                     items = tup[1].split()
                     k = int(items[2])
+
+                    print 'getkey :{0}:'.format(k)
+                    print keyVal.keys()
+
                     if k in keyVal.keys():
                         print keyVal[k]
                         return keyVal[k]
@@ -401,9 +422,10 @@ class keyValStore():
 
         # generate message id
         msg_id = g_node_name + str(g_msg_cnt)
+        print msg_id
 
         #<sender; data; msg_id>
-        sendString = "insert 1 {0} {1} {2}; {3}".format(key, value, time.time(), msg_id)
+        sendString = "insert 1 {0} {1} {2};{3}".format(key, value, time.time(), msg_id)
 
         q_toChannel.put(('A', sendString))
         q_toChannel.put(('B', sendString))
@@ -415,6 +437,9 @@ class keyValStore():
         while True:
             if not q_delivered.empty():
                 tup = q_delivered.get()
+
+                print tup
+
                 items = tup[1].split()
                 if tup[0] != msg_id:
                     # here process the message happened before my msg
@@ -442,17 +467,18 @@ class keyValStore():
                     return keyVal[k]
 
 
-
     def insertModel2(self, key, value):
         global g_msg_cnt
         global g_node_name
+
         g_msg_cnt += 1
 
         # generate message id
         msg_id = g_node_name + str(g_msg_cnt)
+        print msg_id
 
         #<sender; data; msg_id>
-        sendString = "insert 2 {0} {1} {2}; {3}".format(key, value, time.time(), msg_id)
+        sendString = "insert 2 {0} {1} {2};{3}".format(key, value, time.time(), msg_id)
 
         q_toChannel.put(('A', sendString))
         q_toChannel.put(('B', sendString))
@@ -465,6 +491,8 @@ class keyValStore():
             if not q_delivered.empty():
                 tup = q_delivered.get()
                 items = tup[1].split()
+
+
                 if tup[0] != msg_id:
                     # here process the message happened before my msg
                     if items[0] == 'insert':
@@ -526,7 +554,7 @@ class keyValStore():
         msg_id = g_node_name + str(g_msg_cnt)
 
         #<sender; data; msg_id>
-        sendString = "update 1 {0} {1} {2}; {3}".format(key, value, time.time(), msg_id)
+        sendString = "update 1 {0} {1} {2};{3}".format(key, value, time.time(), msg_id)
 
         q_toChannel.put(('A', sendString))
         q_toChannel.put(('B', sendString))
@@ -577,7 +605,7 @@ class keyValStore():
         msg_id = g_node_name + str(g_msg_cnt)
 
         #<sender; data; msg_id>
-        sendString = "update 2 {0} {1} {2}; {3}".format(key, value, time.time(), msg_id)
+        sendString = "update 2 {0} {1} {2};{3}".format(key, value, time.time(), msg_id)
 
         q_toChannel.put(('A', sendString))
         q_toChannel.put(('B', sendString))
@@ -868,6 +896,7 @@ class MP1Shell(cmd.Cmd, keyValStore):
 
 
 def main(argv):
+    global g_node_name
     if len(argv) != 2:
         print 'Specify config file and node name'
         sys.exit(0)
@@ -876,6 +905,9 @@ def main(argv):
 
     config_file = str(argv[0])
     node_name = argv[1]
+
+    # set as global node name for use in other thread
+    g_node_name = node_name
 
     # print config_file
 
