@@ -42,6 +42,7 @@ class SendThread(threading.Thread):
                 sock.sendto(MESSAGE, (UDP_IP, UDP_PORT))
 
             else:
+                print 'wait to send'
                 time.sleep(0.1)
 
 
@@ -77,6 +78,8 @@ class ReceiveThread(threading.Thread):
             q_toSend.put('B', sendString)
             q_toSend.put('C', sendString)
             q_toSend.put('D', sendString)
+
+            print 'broadcasted msg {0} with sequencer {1}'.format(msg_id, self.s_g)
 
 
 def main(argv):

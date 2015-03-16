@@ -178,7 +178,16 @@ class ReceiveThread(threading.Thread):
 
             items = data.split()
 
-
+            # if delete just delete the key, only for model 3 and 4
+                # delete need to go through TO-MC for model 1 and 2
+                # <delete mdl key>
+            if items[0] == 'delete':
+                key = int(items[1])
+                if key in keyVal.keys():
+                    del keyVal[key]
+                else:
+                    print("Can't delete key {0}, doesn't exist".format(key))
+                continue
 
             if items[0] == 'search':
                 key = int(items[1])
@@ -204,17 +213,6 @@ class ReceiveThread(threading.Thread):
                 if items[0] == 'insert':
                     keyVal[int(items[2])] = (int(items[3]), float(items[4]))
                     q_toChannel.put((sender, 'ack 3 {0}'.format(data)))
-
-                # if delete just delete the key, only for model 3 and 4
-                # delete need to go through TO-MC for model 1 and 2
-                # <delete mdl key>
-                if items[0] == 'delete':
-                    key = int(items[2])
-                    if key in keyVal.keys():
-                        del keyVal[key]
-                    else:
-                        print("Can't delete key {0}, doesn't exist".format(key))
-                    continue
 
     	        # if update try to update keyVal store and send sender an ack
                 elif items[0] == 'update':
@@ -290,6 +288,7 @@ class DelayThread(threading.Thread):
     	delayQs['B'] = []
     	delayQs['C'] = []
     	delayQs['D'] = []
+        delayQs['S'] = []
 
         while True:
             if not q_toChannel.empty():
@@ -334,12 +333,12 @@ class keyValStore():
                     items = tup[1]
                     if items[0] == 'insert':
                         keyVal[int(items[2])] = (int(items[3]), float(items[4]))
-                    elif items[0] == 'delete':
-                        k = int(items[2])
-                        if k in keyVal.keys():
-                            del keyVal[k]
-                        else:
-                            print("Can't delete key {0}, doesn't exist".format(k))
+                    # elif items[0] == 'delete':
+                    #     k = int(items[2])
+                    #     if k in keyVal.keys():
+                    #         del keyVal[k]
+                    #     else:
+                    #         print("Can't delete key {0}, doesn't exist".format(k))
                     elif items[0] == 'update':
                         k = int(items[2])
                         if k in keyVal.keys():
@@ -421,12 +420,12 @@ class keyValStore():
                     # here process the message happened before my msg
                     if items[0] == 'insert':
                         keyVal[int(items[2])] = (int(items[3]), float(items[4]))
-                    elif items[0] == 'delete':
-                        k = int(items[2])
-                        if k in keyVal.keys():
-                            del keyVal[k]
-                        else:
-                            print("Can't delete key {0}, doesn't exist".format(k))
+                    # elif items[0] == 'delete':
+                    #     k = int(items[2])
+                    #     if k in keyVal.keys():
+                    #         del keyVal[k]
+                    #     else:
+                    #         print("Can't delete key {0}, doesn't exist".format(k))
                     elif items[0] == 'update':
                         k = int(items[2])
                         if k in keyVal.keys():
@@ -470,12 +469,12 @@ class keyValStore():
                     # here process the message happened before my msg
                     if items[0] == 'insert':
                         keyVal[int(items[2])] = (int(items[3]), float(items[4]))
-                    elif items[0] == 'delete':
-                        k = int(items[2])
-                        if k in keyVal.keys():
-                            del keyVal[k]
-                        else:
-                            print("Can't delete key {0}, doesn't exist".format(k))
+                    # elif items[0] == 'delete':
+                    #     k = int(items[2])
+                    #     if k in keyVal.keys():
+                    #         del keyVal[k]
+                    #     else:
+                    #         print("Can't delete key {0}, doesn't exist".format(k))
                     elif items[0] == 'update':
                         k = int(items[2])
                         if k in keyVal.keys():
@@ -544,12 +543,12 @@ class keyValStore():
                     # here process the message happened before my msg
                     if items[0] == 'insert':
                         keyVal[int(items[2])] = (int(items[3]), float(items[4]))
-                    elif items[0] == 'delete':
-                        k = int(items[2])
-                        if k in keyVal.keys():
-                            del keyVal[k]
-                        else:
-                            print("Can't delete key {0}, doesn't exist".format(k))
+                    # elif items[0] == 'delete':
+                    #     k = int(items[2])
+                    #     if k in keyVal.keys():
+                    #         del keyVal[k]
+                    #     else:
+                    #         print("Can't delete key {0}, doesn't exist".format(k))
                     elif items[0] == 'update':
                         k = int(items[2])
                         if k in keyVal.keys():
@@ -595,12 +594,12 @@ class keyValStore():
                     # here process the message happened before my msg
                     if items[0] == 'insert':
                         keyVal[int(items[2])] = (int(items[3]), float(items[4]))
-                    elif items[0] == 'delete':
-                        k = int(items[2])
-                        if k in keyVal.keys():
-                            del keyVal[k]
-                        else:
-                            print("Can't delete key {0}, doesn't exist".format(k))
+                    # elif items[0] == 'delete':
+                    #     k = int(items[2])
+                    #     if k in keyVal.keys():
+                    #         del keyVal[k]
+                    #     else:
+                    #         print("Can't delete key {0}, doesn't exist".format(k))
                     elif items[0] == 'update':
                         k = int(items[2])
                         if k in keyVal.keys():
@@ -939,6 +938,10 @@ def main(argv):
     shell_thread = CmdThread('MP1Shell')
     print 'created shell thread'
     shell_thread.start()
+
+    shell_thread.join()
+
+
 
 if __name__ == '__main__':
     main(sys.argv[1:])
