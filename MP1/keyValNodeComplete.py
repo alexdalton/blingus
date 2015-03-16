@@ -25,7 +25,6 @@ q_toSend = Queue.Queue()
 
 # key value store for this node
 keyVal = {}
-
 # received messages for this node
 q_received = Queue.Queue()
 
@@ -92,12 +91,12 @@ class repairThread(threading.Thread):
             # if node is missing a key mark that as inconsistent key
             for k, v in nodeKeyVals.iteritems():
                 if len(v) < 4:
-                    inconsistents[k] == 1
+                    inconsistents[k] = 1
 
             # for all inconsistent keys send a write to all nodes with most recent value
             for key in inconsistents.keys():
                 newest = max(nodeKeyVals[key])
-                sendString = "repairWrite 3 {0} {1} {2}".format(k, newest[1], newest[0]) # make sure this only writes if the timestamp is >= what's already in keyVal
+                sendString = "repairWrite 3 {0} {1} {2}".format(key, newest[1], newest[0]) # make sure this only writes if the timestamp is >= what's already in keyVal
                 q_toChannel.put(('A', sendString))
                 q_toChannel.put(('B', sendString))
                 q_toChannel.put(('C', sendString))
@@ -187,6 +186,11 @@ class ReceiveThread(threading.Thread):
                     del keyVal[key]
                 else:
                     print("Can't delete key {0}, doesn't exist".format(key))
+                q_toChannel.put((sender, 'deleteAck {0}'.format(key)))
+                continue
+
+            if items[0] == 'deleteAck':
+                q_received.put(data)
                 continue
 
             if items[0] == 'search':
@@ -211,15 +215,21 @@ class ReceiveThread(threading.Thread):
 
     	        # if insert, insert into keyVal store and send sender an ack
                 if items[0] == 'insert':
-                    keyVal[int(items[2])] = (int(items[3]), float(items[4]))
+                    key = int(items[2])
+                    value = int(items[3])
+                    timestamp = float(items[4])
+                    if (key in keyVal.keys() and keyVal[key][1] <= timestamp) or (key not in keyVal.keys()):
+                        keyVal[key] = (value, timestamp)
                     q_toChannel.put((sender, 'ack 3 {0}'.format(data)))
 
     	        # if update try to update keyVal store and send sender an ack
                 elif items[0] == 'update':
                     key = int(items[2])
-                    if key in keyVal.keys():
-                        keyVal[key] = (int(items[3]), float(items[4]))
-                    else:
+                    value = int(items[3])
+                    timestamp = float(items[4])
+                    if (key in keyVal.keys() and keyVal[key][1] <= timestamp):
+                        keyVal[key] = (value, timestamp)
+                    elif (key not in keyVal.keys()):
                         print("Can't update key {0}, doesn't exist".format(key))
                     q_toChannel.put((sender, 'ack 3 {0}'.format(data)))
 
@@ -651,6 +661,12 @@ class keyValStore():
         q_toChannel.put(('B', sendString))
         q_toChannel.put(('C', sendString))
         q_toChannel.put(('D', sendString))
+        k = 0
+        while (k != 4):
+            if not q_received.empty():
+                item = q_received.get()
+                if item == 'deleteAck {0}'.format(key):
+                    k = k + 1
 
     def delay(self, delayTime):
         start = time.time()
@@ -658,8 +674,7 @@ class keyValStore():
             pass
 
     def showall(self):
-        for k, v in keyVal.iteritems():
-            print(k, v[0])
+        print keyVal
 
     def search(self, key):
         sendString = "search {0}".format(key)
