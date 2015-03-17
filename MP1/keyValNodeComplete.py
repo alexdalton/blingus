@@ -105,15 +105,16 @@ class repairThread(threading.Thread):
 
 # the client thread which constantly read q_toSend and send out messages
 class SendThread(threading.Thread):
-    def __init__(self, node_dict, name):
+    def __init__(self, node_dict, name, is_alive):
         threading.Thread.__init__(self)
         self.node_dict = node_dict
         self.node_name = name
+        self.is_alive = is_alive
 
     def run(self):
         # print "Starting sending thread"
 
-        while True:
+        while self.is_alive:
             if not q_toSend.empty():
                 item = q_toSend.get()
                 dest = self.node_dict[item[0]]
@@ -128,23 +129,29 @@ class SendThread(threading.Thread):
             else:
                 time.sleep(0.1)
 
+    def kill(self):
+            self.is_alive = False
+
 
 # the server thread class which listens incoming messages
 # create a thread to handle incoming messages once sock bind
 class ReceiveThread(threading.Thread):
-    def __init__(self, name, sock, node_dict, delay_dict):
+    def __init__(self, name, sock, node_dict, delay_dict, is_alive):
         threading.Thread.__init__(self)
         self.name = name
         self.sock = sock
         self.node_dict = node_dict
         self.delay_dict = delay_dict
         self.repairStarted = False
+        self.is_alive = is_alive
+
 
     def run(self):
         global g_r_g
+        global g_node_name
         # print 'node ' + self.name + ' starts listening:'
 
-        while True:
+        while self.is_alive:
             msg_str, addr = self.sock.recvfrom(1024)
             msg = msg_str.split(';')
 
@@ -268,42 +275,79 @@ class ReceiveThread(threading.Thread):
                 if len(msg) == 3:
                     # sent from ABCD
                     dict_holdback[msg[2]] = msg[1]
-                    print 'put {0}:={1} in holdback dict'.format(msg[2], msg[1])
+                    # print 'put {0}:={1} in holdback dict'.format(msg[2], msg[1])
                 elif len(msg) == 4:
                     dict_order[msg[3]] = msg[2]
-                    print 'put {0}:={1} in order dict'.format(msg[3], msg[2])
-
-                # execute when r_g = s_g, and msg exist
-                key = str(g_r_g)
-                print 'to deliver :{0}:'.format(key)
-                print dict_order.keys()
+                    # print 'put {0}:={1} in order dict'.format(msg[3], msg[2])
 
 
-                if key in dict_order.keys():
-                    # put < msg_id, its data>
-                    tmp_msg_id = dict_order[key]
-
-                    # make sure the message is received
-                    # otherwise wait
-                    if tmp_msg_id in dict_holdback:
-                        print 'tmp_msg_id:={0}'.format(tmp_msg_id)
-                        print dict_holdback.keys()
-                        q_delivered.put((tmp_msg_id, dict_holdback[tmp_msg_id]))
-
-                        print 'put {0}:={1} in q_delivered'.format(tmp_msg_id, dict_holdback[tmp_msg_id])
-                        del dict_order[key]
-                        del dict_holdback[tmp_msg_id]
-                        g_r_g += 1
+                # execute all msg exist
+                while True:
+                    key = str(g_r_g)
+                    # print 'to deliver :{0}:'.format(key)
+                    # print dict_order.keys()
 
 
+                    if key in dict_order.keys():
+                        # put < msg_id, its data>
+                        tmp_msg_id = dict_order[key]
+
+                        # make sure the message is received
+                        # otherwise wait
+                        if tmp_msg_id in dict_holdback:
+                            # print 'tmp_msg_id:={0}'.format(tmp_msg_id)
+                            # print dict_holdback.keys()
+
+                            # if not coming from self, process directly
+                            # otherwise put in q_delivered, break, and let keyVal class handle
+                            if list(tmp_msg_id)[0] == g_node_name:
+                                q_delivered.put((tmp_msg_id, dict_holdback[tmp_msg_id]))
+                                print 'put {0}:={1} in q_delivered'.format(tmp_msg_id, dict_holdback[tmp_msg_id])
+                                del dict_order[key]
+                                del dict_holdback[tmp_msg_id]
+                                g_r_g += 1
+
+                                break
+                            else:
+                                items = dict_holdback[tmp_msg_id].split()
+                                # here process the message happened before my msg
+                                if items[0] == 'insert':
+                                    keyVal[int(items[2])] = (int(items[3]), float(items[4]))
+                                    # print 'processed sg_id insert:{0}:'.format(tmp_msg_id)
+                                elif items[0] == 'update':
+                                    k = int(items[2])
+                                    if k in keyVal.keys():
+                                        keyVal[k] = (int(items[3]), float(items[4]))
+                                        # print 'processed msg_id update:{0}:'.format(tmp_msg_id)
+                                    else:
+                                        print("Can't update key {0}, doesn't exist".format(key))
+                                elif items[0] == 'get':
+                                    pass
+                                    #print 'processed msg_id get:{0}:'.format(tmp_msg_id)
+                                    # do nothing since will not change my values
+
+                                print 'processed {0}:={1}'.format(tmp_msg_id, dict_holdback[tmp_msg_id])
+                                del dict_order[key]
+                                del dict_holdback[tmp_msg_id]
+                                g_r_g += 1
+
+                        else:
+                            # if one of them is not true, break
+                            break
+                    else:
+                        break
+
+    def kill(self):
+        self.is_alive = False
 
 
 # delay function thread which generate random delays
 class DelayThread(threading.Thread):
-    def __init__(self, name, delay_dict):
+    def __init__(self, name, delay_dict, is_alive):
         threading.Thread.__init__(self)
         self.name = name
         self.delay_dict = delay_dict
+        self.is_alive = is_alive
 
     def run(self):
 	    # Simple channel list to ensure FIFO delivery of messages
@@ -314,7 +358,7 @@ class DelayThread(threading.Thread):
     	delayQs['D'] = []
         delayQs['S'] = []
 
-        while True:
+        while self.is_alive:
             if not q_toChannel.empty():
                 # Get delay and timestamp for new message and append to channel list
                 item = q_toChannel.get()
@@ -327,6 +371,9 @@ class DelayThread(threading.Thread):
                 while len(q_delay) and time.time() >= q_delay[0][1] + q_delay[0][2]:
                     item = q_delay.pop(0)
                     q_toSend.put(item[0])
+
+    def kill(self):
+        self.is_alive = False
 
 
 class keyValStore():
@@ -353,7 +400,7 @@ class keyValStore():
             if not q_delivered.empty():
                 tup = q_delivered.get()
 
-                print 'getModel1, deque :{0}:'.format(tup)
+                # print 'getModel1, deque :{0}:'.format(tup)
 
                 items = tup[1].split()
                 if tup[0] != msg_id:
@@ -379,8 +426,8 @@ class keyValStore():
                 elif tup[0] == msg_id:
                     k = int(items[2])
 
-                    print 'getkey :{0}:'.format(k)
-                    print keyVal.keys()
+                    # print 'getkey :{0}:'.format(k)
+                    # print keyVal.keys()
 
                     if k in keyVal.keys():
                         print keyVal[k]
@@ -432,7 +479,7 @@ class keyValStore():
 
         # generate message id
         msg_id = g_node_name + str(g_msg_cnt)
-        print msg_id
+        # print msg_id
 
         #<sender; data; msg_id>
         sendString = "insert 1 {0} {1} {2};{3}".format(key, value, time.time(), msg_id)
@@ -472,7 +519,7 @@ class keyValStore():
                 elif tup[0] == msg_id:
                     k = int(items[2])
                     keyVal[k] = (int(items[3]), float(items[4]))
-                    print 'inserted ', k, keyVal[k]
+                    print 'inserted {0}:={1}'.format(k, keyVal[k])
                     return keyVal[k]
 
 
@@ -484,7 +531,7 @@ class keyValStore():
 
         # generate message id
         msg_id = g_node_name + str(g_msg_cnt)
-        print msg_id
+        # print msg_id
 
         #<sender; data; msg_id>
         sendString = "insert 2 {0} {1} {2};{3}".format(key, value, time.time(), msg_id)
@@ -524,7 +571,7 @@ class keyValStore():
                 elif tup[0] == msg_id:
                     k = int(items[2])
                     keyVal[k] = (int(items[3]), float(items[4]))
-                    print 'inserted ', k, keyVal[k]
+                    print 'inserted {0}:={1}'.format(k, keyVal[k])
                     return keyVal[k]
 
 
@@ -602,7 +649,7 @@ class keyValStore():
                     else:
                         print("Can't update key {0}, doesn't exist".format(k))
 
-                    print 'updated ', k, keyVal[k]
+                    print 'updated {0}:={1}'.format(k, keyVal[k])
                     return keyVal[k]
 
     def updateModel2(self, key, value):
@@ -653,7 +700,7 @@ class keyValStore():
                     else:
                         print("Can't update key {0}, doesn't exist".format(k))
 
-                    print 'updated ', k, keyVal[k]
+                    print 'updated {0}:={1}'.format(k, keyVal[k])
                     return keyVal[k]
 
     def updateModel3(self, key, value):
@@ -732,7 +779,8 @@ class CmdThread(threading.Thread):
         cli = MP1Shell()
         print 'created cmd line interface object'
         cli.cmdloop()
-        print 'started command line interface'
+        # print 'started command line interface'
+        return True
 
 
 # command line class
@@ -900,13 +948,19 @@ class MP1Shell(cmd.Cmd, keyValStore):
             else:
                 print 'q_toChannel is empty'
 
-    def do_byebye(self, arg):
+    def do_bye(self, arg):
         """
         :param arg: bye (stop code)
         :return: true
         """
         print 'stop demo'
+        return True
         # sys.exit(0)
+
+    def emptyline(self):
+        # overwrite to not execute last command when hit enter
+        pass
+
 
 
 def main(argv):
@@ -966,17 +1020,17 @@ def main(argv):
     print HOST
     print PORT
 
-    recv_thread = ReceiveThread(node_name, sock, node_dict, delay_dict)
+    recv_thread = ReceiveThread(node_name, sock, node_dict, delay_dict, True)
     print 'created receive thread'
     recv_thread.start()
 
     # Here start the thread for checking if should send out messages
-    send_thread = SendThread(node_dict, node_name)
+    send_thread = SendThread(node_dict, node_name, True)
     print 'created send thread'
     send_thread.start()
 
     # Here start the delay thread
-    delay_thread = DelayThread(node_name, delay_dict)
+    delay_thread = DelayThread(node_name, delay_dict, True)
     print 'created delay thread'
     delay_thread.start()
 
@@ -986,6 +1040,20 @@ def main(argv):
     shell_thread.start()
 
     shell_thread.join()
+    print 'after join'
+
+    recv_thread.kill()
+    send_thread.kill()
+    delay_thread.kill()
+    print 'three kills'
+
+
+    recv_thread.join()
+    print 'killed recv'
+    send_thread.join()
+    print 'killed send'
+    delay_thread.join()
+    print 'killed delay'
 
 
 
