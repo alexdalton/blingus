@@ -184,158 +184,165 @@ class ReceiveThread(threading.Thread):
 
             items = data.split()
 
-            # if delete just delete the key, only for model 3 and 4
-                # delete need to go through TO-MC for model 1 and 2
-                # <delete mdl key>
-            if items[0] == 'delete':
-                key = int(items[1])
-                if key in keyVal.keys():
-                    del keyVal[key]
-                else:
-                    print("Can't delete key {0}, doesn't exist".format(key))
-                q_toChannel.put((sender, 'deleteAck {0}'.format(key)))
-                continue
+            if len(items) == 1:
+                # if it is just a send hello message
+                print 'Received "' + data + '" from ' + sender + ', Max delay is ' \
+                + str(delay_max) + 's, system time is ' + \
+                time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
 
-            if items[0] == 'deleteAck':
-                q_received.put(data)
-                continue
-
-            if items[0] == 'search':
-                key = int(items[1])
-                if key in keyVal.keys():
-                    q_toChannel.put((sender, 'searchAck {0}'.format(self.name)))
-                else:
-                    q_toChannel.put((sender, 'searchAck F'))
-                continue
-
-            if items[0] == 'searchAck':
-                q_search.put(data)
-                continue
-
-    	    # models 3 & 4 do stuff with received messages
-            if int(items[1]) > 2:
-                # start the repair thread if not started(only need one)
-                if(self.name == 'A' and self.repairStarted == False):
-                    repair_thread = repairThread()
-                    repair_thread.start()
-                    self.repairStarted = True
-
-    	        # if insert, insert into keyVal store and send sender an ack
-                if items[0] == 'insert':
-                    key = int(items[2])
-                    value = int(items[3])
-                    timestamp = float(items[4])
-                    if (key in keyVal.keys() and keyVal[key][1] <= timestamp) or (key not in keyVal.keys()):
-                        keyVal[key] = (value, timestamp)
-                    q_toChannel.put((sender, 'ack 3 {0}'.format(data)))
-
-    	        # if update try to update keyVal store and send sender an ack
-                elif items[0] == 'update':
-                    key = int(items[2])
-                    value = int(items[3])
-                    timestamp = float(items[4])
-                    if (key in keyVal.keys() and keyVal[key][1] <= timestamp):
-                        keyVal[key] = (value, timestamp)
-                    elif (key not in keyVal.keys()):
-                        print("Can't update key {0}, doesn't exist".format(key))
-                    q_toChannel.put((sender, 'ack 3 {0}'.format(data)))
-
-    	        # if get, try to get the value and return it in an ack to the sender
-                elif items[0] == 'get':
-                    key = int(items[2])
+            else:
+                # if delete just delete the key, only for model 3 and 4
+                    # delete need to go through TO-MC for model 1 and 2
+                    # <delete mdl key>
+                if items[0] == 'delete':
+                    key = int(items[1])
                     if key in keyVal.keys():
-                        q_toChannel.put((sender, 'ack 3 {0}| {1}| {2}'.format(data, keyVal[key][0], keyVal[key][1])))
+                        del keyVal[key]
                     else:
-                        q_toChannel.put((sender, 'ack 3 {0}| {1}| {2}'.format(data, 0, -1.0)))
-                        print("Can't get key {0}, doesn't exist".format(key))
+                        print("Can't delete key {0}, doesn't exist".format(key))
+                    q_toChannel.put((sender, 'deleteAck {0}'.format(key)))
+                    continue
 
-                #if repair send the information for the key-value store
-                elif items[0] == 'repair':
-                    q_toChannel.put((sender, 'repairAck 3 |' + json.dumps(keyVal)))
-
-    	        # if an ack put into received queue to be handled by the command thread
-                elif items[0] == 'ack':
+                if items[0] == 'deleteAck':
                     q_received.put(data)
+                    continue
 
-                elif items[0] == 'repairAck':
-                    q_repair.put(data)
-
-                elif items[0] == 'repairWrite':
-                    key = int(items[2])
-                    value = int(items[3])
-                    timestamp = float(items[4])
-                    if (key in keyVal.keys() and keyVal[key][1] <= timestamp) or (key not in keyVal.keys()):
-                        keyVal[key] = (value, timestamp)
-
-            elif int(items[1]) <= 2:
-                # if model 1 or 2. Put delivered messages in q_delivered
-                # in keyValue functions, read q_delivered for linearizability
-                # and sequential consistency
-                # implement total ordering
-                if len(msg) == 3:
-                    # sent from ABCD
-                    dict_holdback[msg[2]] = msg[1]
-                    # print 'put {0}:={1} in holdback dict'.format(msg[2], msg[1])
-                elif len(msg) == 4:
-                    dict_order[msg[3]] = msg[2]
-                    # print 'put {0}:={1} in order dict'.format(msg[3], msg[2])
-
-
-                # execute all msg exist
-                while True:
-                    key = str(g_r_g)
-                    # print 'to deliver :{0}:'.format(key)
-                    # print dict_order.keys()
-
-
-                    if key in dict_order.keys():
-                        # put < msg_id, its data>
-                        tmp_msg_id = dict_order[key]
-
-                        # make sure the message is received
-                        # otherwise wait
-                        if tmp_msg_id in dict_holdback:
-                            # print 'tmp_msg_id:={0}'.format(tmp_msg_id)
-                            # print dict_holdback.keys()
-
-                            # if not coming from self, process directly
-                            # otherwise put in q_delivered, break, and let keyVal class handle
-                            if list(tmp_msg_id)[0] == g_node_name:
-                                q_delivered.put((tmp_msg_id, dict_holdback[tmp_msg_id]))
-                                print 'put {0}:={1} in q_delivered'.format(tmp_msg_id, dict_holdback[tmp_msg_id])
-                                del dict_order[key]
-                                del dict_holdback[tmp_msg_id]
-                                g_r_g += 1
-
-                                break
-                            else:
-                                items = dict_holdback[tmp_msg_id].split()
-                                # here process the message happened before my msg
-                                if items[0] == 'insert':
-                                    keyVal[int(items[2])] = (int(items[3]), float(items[4]))
-                                    # print 'processed sg_id insert:{0}:'.format(tmp_msg_id)
-                                elif items[0] == 'update':
-                                    k = int(items[2])
-                                    if k in keyVal.keys():
-                                        keyVal[k] = (int(items[3]), float(items[4]))
-                                        # print 'processed msg_id update:{0}:'.format(tmp_msg_id)
-                                    else:
-                                        print("Can't update key {0}, doesn't exist".format(key))
-                                elif items[0] == 'get':
-                                    pass
-                                    #print 'processed msg_id get:{0}:'.format(tmp_msg_id)
-                                    # do nothing since will not change my values
-
-                                print 'processed {0}:={1}'.format(tmp_msg_id, dict_holdback[tmp_msg_id])
-                                del dict_order[key]
-                                del dict_holdback[tmp_msg_id]
-                                g_r_g += 1
-
-                        else:
-                            # if one of them is not true, break
-                            break
+                if items[0] == 'search':
+                    key = int(items[1])
+                    if key in keyVal.keys():
+                        q_toChannel.put((sender, 'searchAck {0}'.format(self.name)))
                     else:
-                        break
+                        q_toChannel.put((sender, 'searchAck F'))
+                    continue
+
+                if items[0] == 'searchAck':
+                    q_search.put(data)
+                    continue
+
+                # models 3 & 4 do stuff with received messages
+                if int(items[1]) > 2:
+                    # start the repair thread if not started(only need one)
+                    if(self.name == 'A' and self.repairStarted == False):
+                        repair_thread = repairThread()
+                        repair_thread.start()
+                        self.repairStarted = True
+
+                    # if insert, insert into keyVal store and send sender an ack
+                    if items[0] == 'insert':
+                        key = int(items[2])
+                        value = int(items[3])
+                        timestamp = float(items[4])
+                        if (key in keyVal.keys() and keyVal[key][1] <= timestamp) or (key not in keyVal.keys()):
+                            keyVal[key] = (value, timestamp)
+                        q_toChannel.put((sender, 'ack 3 {0}'.format(data)))
+
+                    # if update try to update keyVal store and send sender an ack
+                    elif items[0] == 'update':
+                        key = int(items[2])
+                        value = int(items[3])
+                        timestamp = float(items[4])
+                        if (key in keyVal.keys() and keyVal[key][1] <= timestamp):
+                            keyVal[key] = (value, timestamp)
+                        elif (key not in keyVal.keys()):
+                            print("Can't update key {0}, doesn't exist".format(key))
+                        q_toChannel.put((sender, 'ack 3 {0}'.format(data)))
+
+                    # if get, try to get the value and return it in an ack to the sender
+                    elif items[0] == 'get':
+                        key = int(items[2])
+                        if key in keyVal.keys():
+                            q_toChannel.put((sender, 'ack 3 {0}| {1}| {2}'.format(data, keyVal[key][0], keyVal[key][1])))
+                        else:
+                            q_toChannel.put((sender, 'ack 3 {0}| {1}| {2}'.format(data, 0, -1.0)))
+                            print("Can't get key {0}, doesn't exist".format(key))
+
+                    #if repair send the information for the key-value store
+                    elif items[0] == 'repair':
+                        q_toChannel.put((sender, 'repairAck 3 |' + json.dumps(keyVal)))
+
+                    # if an ack put into received queue to be handled by the command thread
+                    elif items[0] == 'ack':
+                        q_received.put(data)
+
+                    elif items[0] == 'repairAck':
+                        q_repair.put(data)
+
+                    elif items[0] == 'repairWrite':
+                        key = int(items[2])
+                        value = int(items[3])
+                        timestamp = float(items[4])
+                        if (key in keyVal.keys() and keyVal[key][1] <= timestamp) or (key not in keyVal.keys()):
+                            keyVal[key] = (value, timestamp)
+
+                elif int(items[1]) <= 2:
+                    # if model 1 or 2. Put delivered messages in q_delivered
+                    # in keyValue functions, read q_delivered for linearizability
+                    # and sequential consistency
+                    # implement total ordering
+                    if len(msg) == 3:
+                        # sent from ABCD
+                        dict_holdback[msg[2]] = msg[1]
+                        # print 'put {0}:={1} in holdback dict'.format(msg[2], msg[1])
+                    elif len(msg) == 4:
+                        dict_order[msg[3]] = msg[2]
+                        # print 'put {0}:={1} in order dict'.format(msg[3], msg[2])
+
+
+                    # execute all msg exist
+                    while True:
+                        key = str(g_r_g)
+                        # print 'to deliver :{0}:'.format(key)
+                        # print dict_order.keys()
+
+
+                        if key in dict_order.keys():
+                            # put < msg_id, its data>
+                            tmp_msg_id = dict_order[key]
+
+                            # make sure the message is received
+                            # otherwise wait
+                            if tmp_msg_id in dict_holdback:
+                                # print 'tmp_msg_id:={0}'.format(tmp_msg_id)
+                                # print dict_holdback.keys()
+
+                                # if not coming from self, process directly
+                                # otherwise put in q_delivered, break, and let keyVal class handle
+                                if list(tmp_msg_id)[0] == g_node_name:
+                                    q_delivered.put((tmp_msg_id, dict_holdback[tmp_msg_id]))
+                                    print 'put {0}:={1} in q_delivered'.format(tmp_msg_id, dict_holdback[tmp_msg_id])
+                                    del dict_order[key]
+                                    del dict_holdback[tmp_msg_id]
+                                    g_r_g += 1
+
+                                    break
+                                else:
+                                    items = dict_holdback[tmp_msg_id].split()
+                                    # here process the message happened before my msg
+                                    if items[0] == 'insert':
+                                        keyVal[int(items[2])] = (int(items[3]), float(items[4]))
+                                        # print 'processed sg_id insert:{0}:'.format(tmp_msg_id)
+                                    elif items[0] == 'update':
+                                        k = int(items[2])
+                                        if k in keyVal.keys():
+                                            keyVal[k] = (int(items[3]), float(items[4]))
+                                            # print 'processed msg_id update:{0}:'.format(tmp_msg_id)
+                                        else:
+                                            print("Can't update key {0}, doesn't exist".format(key))
+                                    elif items[0] == 'get':
+                                        pass
+                                        #print 'processed msg_id get:{0}:'.format(tmp_msg_id)
+                                        # do nothing since will not change my values
+
+                                    print 'processed {0}:={1}'.format(tmp_msg_id, dict_holdback[tmp_msg_id])
+                                    del dict_order[key]
+                                    del dict_holdback[tmp_msg_id]
+                                    g_r_g += 1
+
+                            else:
+                                # if one of them is not true, break
+                                break
+                        else:
+                            break
 
     def kill(self):
         self.is_alive = False
