@@ -18,7 +18,7 @@ import math
 # use global queues for message passing between threads
 # g_msg[node_id] = q_msg
 # q_msg:
-# ('shell input message', 'nodes message', 'return results')
+# ('shell input message', 'nodes message')
 g_msg = {}
 
 # global variable for the dimension
@@ -37,15 +37,18 @@ class NodeThread(threading.Thread):
 
         # successor(finger[1]); initialized as 0
         self.successor = 0
+
+        # save all the keys in a list of integers
         self.keys = []
+
         self.is_alive = True
 
     def run(self):
         print "created node {0}".format(self.node_id)
 
         while self.is_alive:
-            # check global message queue
-            pass
+            self.parse_msg_queue()
+            time.sleep(0.1)
 
     def kill(self):
         self.is_alive = False
@@ -54,15 +57,44 @@ class NodeThread(threading.Thread):
     def init_node_0(self):
         pass
 
+
+    # parse the queue and call respective functions
+    def parse_msg_queue(self):
+
+        if not g_msg[self.node_id].empty():
+            msg_tp = g_msg[self.node_id].get()
+
+            cmd_msg = msg_tp[0]
+            tp = cmd_msg.split()
+
+            if tp[0] == 'join':
+                # join it self to the ring
+                pass
+            elif tp[0] == 'find':
+                # double check if the msg is correctly pushed in the right queue
+                if int(tp[1]) != self.node_id:
+                    print 'message {0} pushed to wrong queue {1} \n'.format(cmd_msg, self.node_id)
+                else:
+                    key_id = int(tp[2])
+                    self.find_successor(cmd_msg, key_id)
+            elif tp[0] == 'leave':
+                # leave the ring
+                pass
+            elif tp[0] == 'show':
+                # show the keys that it saved
+                print 'Node {0} stores keys {1} \n'.format(self.node_id, self.keys)
+
+
     # find successor
     def find_successor(self, cmd_msg, key_id):
         if self.node_id < key_id <= self.successor:
             # found
-            print 'Key {0} saved on node {1}'.format(key_id, self.successor)
+            print 'Key {0} saved on node {1} \n'.format(key_id, self.successor)
         else:
             closest_node_id = self.closest_preceding_node(key_id)
             # push to the queue of the node
-            g_msg[closest_node_id].put((cmd_msg, '', ''))
+            g_msg[closest_node_id].put((cmd_msg, ''))
+
 
     # find the closest preceding nodes in this table for id
     def closest_preceding_node(self, key_id):
@@ -133,8 +165,7 @@ class MP2Shell(cmd.Cmd):
 
             # push joint function in to message queue
             g_msg[node_id] = Queue.Queue()
-            g_msg[node_id].put((arg, '', ''))
-
+            g_msg[node_id].put((arg, ''))
 
     def do_find(self, arg):
         """
@@ -144,15 +175,15 @@ class MP2Shell(cmd.Cmd):
         """
         tp = arg.split()
         if len(tp) < 2:
-            print("not enough parameters")
+            print("not enough parameters \n")
             return
 
         # push command to q_node
         node_id = int(tp[1])
         if node_id not in g_msg.keys():
-            print 'Error, node {0} does not exist'.format(node_id)
+            print 'Error, node {0} does not exist \n'.format(node_id)
         else:
-            g_msg[node_id].put((arg, '', ''))
+            g_msg[node_id].put((arg, ''))
 
         # node_id will print out results once found
 
@@ -170,11 +201,9 @@ class MP2Shell(cmd.Cmd):
         # put to queue
         node_id = int(tp[1])
         if node_id not in g_msg.keys():
-            print 'Error, node {0} does not exist'.format(node_id)
+            print 'Error, node {0} does not exist \n'.format(node_id)
         else:
-            g_msg[node_id].put((arg, '', ''))
-
-
+            g_msg[node_id].put((arg, ''))
 
     def do_show(self, arg):
         """
@@ -191,15 +220,13 @@ class MP2Shell(cmd.Cmd):
             # push to all queues
             # each node will print out one table showing its info
             for key in g_msg:
-                g_msg[key].put((arg, '', ''))
+                g_msg[key].put((arg, ''))
         else:
             node_id = int(tp[1])
             if node_id not in g_msg.keys():
-                print 'Error, node {0} does not exist'.format(node_id)
+                print 'Error, node {0} does not exist \n'.format(node_id)
             else:
-                g_msg[node_id].put((arg, '', ''))
-
-
+                g_msg[node_id].put((arg, ''))
 
     def do_bye(self, arg):
         """
