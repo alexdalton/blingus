@@ -12,10 +12,13 @@ import csv
 import random
 import json
 import numpy
+import math
 
 
 # use global queues for message passing between threads
-# g_msg[node_id] = q_node_id
+# g_msg[node_id] = q_msg
+# q_msg:
+# ('shell input message', 'nodes message', 'return results')
 g_msg = {}
 
 # global variable for the dimension
@@ -28,19 +31,56 @@ class NodeThread(threading.Thread):
     def __init__(self, node_id):
         threading.Thread.__init__(self)
         self.node_id = node_id
-        self.node_finger_table = numpy.zeros(g_dim, g_dim)
+
+        # (start, (interval), successor)
+        self.finger = list()
+
+        # successor(finger[1]); initialized as 0
+        self.successor = 0
         self.keys = []
         self.is_alive = True
 
     def run(self):
-        # print "Starting sending thread"
+        print "created node {0}".format(self.node_id)
 
         while self.is_alive:
             # check global message queue
             pass
 
     def kill(self):
-            self.is_alive = False
+        self.is_alive = False
+
+    # initialize with all 256 key values
+    def init_node_0(self):
+        pass
+
+    # find successor
+    def find_successor(self, cmd_msg, key_id):
+        if self.node_id < key_id <= self.successor:
+            # found
+            print 'Key {0} saved on node {1}'.format(key_id, self.successor)
+        else:
+            closest_node_id = self.closest_preceding_node(key_id)
+            # push to the queue of the node
+            g_msg[closest_node_id].put((cmd_msg, '', ''))
+
+    # find the closest preceding nodes in this table for id
+    def closest_preceding_node(self, key_id):
+        cnt = g_dim
+        while cnt >= 0:
+            succ_node = self.finger[cnt][2]
+
+            # may go around the circle
+            if id <= self.node_id:
+                tmp_id = key_id + math.pow(2, g_dim)
+                tmp_succ_node = succ_node + math.pow(2, g_dim)
+            else:
+                tmp_id = key_id
+                tmp_succ_node = succ_node
+
+            # compare and find the closest node id
+            if self.node_id < tmp_succ_node < tmp_id:
+                return succ_node
 
 
 # command line interface thread
@@ -79,8 +119,22 @@ class MP2Shell(cmd.Cmd):
             return
 
         # check if node exits
+        if int(tp[1]) in g_msg.keys():
+            pass
 
-        # if not, create a new thread for node p
+        else:
+            node_id = int(tp[1])
+            # if not, create a new thread for node p
+            node_name = 'n_{0}'.format(node_id)
+            vars()[node_name] = NodeThread(node_id)
+            print 'created node n_{0}\n'.format(node_id)
+            # start thread
+            vars()[node_name].start()
+
+            # push joint function in to message queue
+            g_msg[node_id] = Queue.Queue()
+            g_msg[node_id].put((arg, '', ''))
+
 
     def do_find(self, arg):
         """
@@ -93,9 +147,14 @@ class MP2Shell(cmd.Cmd):
             print("not enough parameters")
             return
 
-        # push command to q_node_p
+        # push command to q_node
+        node_id = int(tp[1])
+        if node_id not in g_msg.keys():
+            print 'Error, node {0} does not exist'.format(node_id)
+        else:
+            g_msg[node_id].put((arg, '', ''))
 
-        # wait for return value
+        # node_id will print out results once found
 
     def do_leave(self, arg):
         """
@@ -108,6 +167,15 @@ class MP2Shell(cmd.Cmd):
             print("not enough parameters")
             return
 
+        # put to queue
+        node_id = int(tp[1])
+        if node_id not in g_msg.keys():
+            print 'Error, node {0} does not exist'.format(node_id)
+        else:
+            g_msg[node_id].put((arg, '', ''))
+
+
+
     def do_show(self, arg):
         """
         show keys stored in node p, or all
@@ -118,6 +186,19 @@ class MP2Shell(cmd.Cmd):
         if len(tp) < 1:
             print("not enough parameters")
             return
+
+        if tp[1] == 'all':
+            # push to all queues
+            # each node will print out one table showing its info
+            for key in g_msg:
+                g_msg[key].put((arg, '', ''))
+        else:
+            node_id = int(tp[1])
+            if node_id not in g_msg.keys():
+                print 'Error, node {0} does not exist'.format(node_id)
+            else:
+                g_msg[node_id].put((arg, '', ''))
+
 
 
     def do_bye(self, arg):
@@ -137,13 +218,14 @@ class MP2Shell(cmd.Cmd):
 def main(argv):
 
     # initialize the chord by creating N0
+    n_0 = NodeThread(0)
+    n_0.init_node_0()
 
     # start MP2Shell
     # MP2shell as the coordinator, creates and removes nodes.
     shell_thread = CmdThread('MP2Shell')
     print 'created shell thread'
     shell_thread.start()
-
 
 
 if __name__ == '__main__':
