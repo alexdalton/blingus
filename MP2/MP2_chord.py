@@ -8,8 +8,6 @@ import threading
 import time
 import cmd
 import Queue
-import csv
-import random
 import json
 import numpy
 import math
@@ -33,10 +31,12 @@ class NodeThread(threading.Thread):
         self.node_id = node_id
 
         # (start, (interval), successor)
+        # defined same as in the paper
         self.finger = list()
 
         # successor(finger[1]); initialized as 0
         self.successor = 0
+        self.predecessor = 0
 
         # save all the keys in a list of integers
         self.keys = []
@@ -55,7 +55,20 @@ class NodeThread(threading.Thread):
 
     # initialize with all 256 key values
     def init_node_0(self):
-        pass
+        self.node_id = 0
+        self.successor = 0
+        self.predecessor = 0
+
+        # save all keys 0~255
+        self.keys = list(range(0, int(math.pow(2, g_dim))))
+
+        # initialize the finger table
+        i = 0
+        while i < g_dim:
+            self.finger.append((self.node_id + int(math.pow(2, i)),
+                                (self.node_id + int(math.pow(2, i)),
+                                 int(math.fmod(self.node_id + int(math.pow(2, i+1)),
+                                               int(math.pow(2, g_dim)) ))), 0))
 
 
     # parse the queue and call respective functions
