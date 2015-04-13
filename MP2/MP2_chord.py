@@ -92,7 +92,32 @@ class NodeThread(threading.Thread):
                     self.find_successor(cmd_msg, key_id)
             elif tp[0] == 'leave':
                 # leave the ring
-                pass
+                node_id = tp[1]
+
+                # if is itself
+                if node_id == self.node_id:
+                    # ask its predecessor to change successor to next node
+                    g_msg[self.predecessor].put((cmd_msg, 'successor:{0}'.format(self.successor)))
+
+                    # pass keys to successor and change successor's predecessor
+                    g_msg[self.successor].put((cmd_msg, 'keys:{0}'.format(self.keys)))
+                    g_msg[self.successor].put((cmd_msg, 'predecessor:{0}'.format(self.predecessor)))
+
+                    # find all nodes that points to itself and ask them to update.
+
+                # asked by the node who is leaving
+                else:
+                    data_msg = msg_tp[1]
+                    data_tp = data_msg.split(':')
+
+                    if data_tp[0] == 'successor':
+                        self.successor = data_tp[1]
+                    elif data_tp[0] == 'predecessor':
+                        self.predecessor = data_tp[1]
+                    elif data_tp[0] == 'keys':
+                        pass
+
+
             elif tp[0] == 'show':
                 # show the keys that it saved
                 print 'Node {0} stores keys {1} \n'.format(self.node_id, self.keys)
