@@ -84,6 +84,8 @@ class NodeThread(threading.Thread):
         if self.node_id != 0:
             self.init_finger_table()
             self.update_others()
+
+            # transfer part of the keys to this node
         else:
             self.keys = range(0, pow(2, g_dim))
             for i in range(0, g_dim):
@@ -97,7 +99,7 @@ class NodeThread(threading.Thread):
         if self.node_id == 0:
             print 'Error: Node 0 can not leave\n'
         else:
-            pass
+
             # ask its predecessor to change successor to next node
             set_pred_succ_msg = message(self.node_id, self.predecessor,
                                         'set_successor', self.successor,
@@ -116,8 +118,9 @@ class NodeThread(threading.Thread):
                                        'transfer_keys_ack')
             transfer_key_msg.send()
 
-        # find all nodes that points to itself and ask them to update
-            self.update_others()
+        # find all nodes that points to itself and ask them to update their pointer to
+        # my successor
+            self.update_others_leave()
 
     def init_finger_table(self):
         for i in range(0, g_dim):
@@ -169,9 +172,9 @@ class NodeThread(threading.Thread):
                 updateFingerMsg = message(self.node_id, p, "update_finger_table", [s, i])
                 updateFingerMsg.send()
 
-    def find_successor(self, id):
-        print str(self.node_id) + " find_successor " + str(id)
-        n_p = self.find_predecessor(id)
+    def find_successor(self, node_id):
+        print str(self.node_id) + " find_successor " + str(node_id)
+        n_p = self.find_predecessor(node_id)
         if self.node_id != n_p:
             getSuccessorMsg = message(self.node_id, n_p, "get_successor", ackID="get_successor_ack")
             n_p_successor = getSuccessorMsg.send_and_get_response()[0]
@@ -179,30 +182,30 @@ class NodeThread(threading.Thread):
             n_p_successor = self.finger[0][2]
         return n_p_successor
 
-    def find_predecessor(self, id):
+    def find_predecessor(self, node_id):
         n_p = self.node_id
         n_p_successor = self.finger[0][2]
 
-        while id not in self.circularInterval(n_p, n_p_successor, False, True):
-            getCPFMsg = message(self.node_id, n_p, "get_CPF", [id], "get_CPF_ack")
+        while node_id not in self.circularInterval(n_p, n_p_successor, False, True):
+            getCPFMsg = message(self.node_id, n_p, "get_CPF", [node_id], "get_CPF_ack")
             getSuccessorMsg = message(self.node_id, n_p, "get_successor", ackID="get_successor_ack")
             if self.node_id != n_p:
                 n_p = getCPFMsg.send_and_get_response()[0]
                 n_p_successor = getSuccessorMsg.send_and_get_response()[0]
             else:
-                n_p = self.closest_preceding_finger(id)
+                n_p = self.closest_preceding_finger(node_id)
                 getSuccessorMsg.to_id = n_p
                 n_p_successor = getSuccessorMsg.send_and_get_response()[0]
-        print str(self.node_id) + " find_predecessor " + str(id) + " = " + str(n_p)
+        print str(self.node_id) + " find_predecessor " + str(node_id) + " = " + str(n_p)
         return n_p
 
-    def closest_preceding_finger(self, id):
+    def closest_preceding_finger(self, node_id):
         for i in range(g_dim - 1, -1, -1):
-            if self.finger[i][2] in self.circularInterval(self.node_id, id, False, False):
+            if self.finger[i][2] in self.circularInterval(self.node_id, node_id, False, False):
                 return self.finger[i][2]
-                print str(self.node_id) + " closest_preceding_finger " + str(id) + " = " + str(self.finger[i][2])
+                print str(self.node_id) + " closest_preceding_finger " + str(node_id) + " = " + str(self.finger[i][2])
 
-        print str(self.node_id) + " closest_preceding_finger " + str(id) + " = " + str(self.node_id)
+        print str(self.node_id) + " closest_preceding_finger " + str(node_id) + " = " + str(self.node_id)
         return self.node_id
 
     def circularInterval(self, start, end, startInclusive, endInclusive):
@@ -215,6 +218,25 @@ class NodeThread(threading.Thread):
         if endInclusive:
             interval.append(end)
         return interval
+
+    def update_others_leave(self):
+        for i in range(0, g_dim):
+            p = self.find_predecessor((self.node_id - pow(2, i) + 1) % pow(2, g_dim))
+            if p != self.node_id:
+                updateFingerMsg = message(self.node_id, p,
+                                          "update_finger_table_leave",
+                                          [self.node_id, i, self.successor])
+                updateFingerMsg.send()
+
+    def update_finger_table_leave(self, s, i, s_succ):
+        if s in self.circularInterval(self.node_id, self.finger[i][2], True, False):
+            self.finger[i][2] = s_succ
+            p = self.predecessor
+            if self.node_id != p and s != p:
+                updateFingerMsg = message(self.node_id, p,
+                                          "update_finger_table",
+                                          [s, i, s_succ])
+                updateFingerMsg.send()
 
     def parse_msg_queue(self):
 
@@ -246,7 +268,10 @@ class NodeThread(threading.Thread):
                 self.update_finger_table(msg_args[0], msg_args[1])
             elif msg == 'transfer_keys':
                 self.keys.extend(msg_args[0])
-
+            elif msg == 'update_finger_table_leave':
+                self.update_finger_table(msg_args[0], msg_args[1], msg_args[2])
+            elif msg == 'show_keys':
+                print 'node {0}: {1}'.format(self.node_id, self.keys)
             elif msg == 'find':
                 pass
                 # double check if the msg is correctly pushed in the right queue
@@ -395,11 +420,14 @@ class MP2Shell(cmd.Cmd):
             return
 
         # push command to q_node
-        node_id = int(tp[1])
+        node_id = int(tp[0])
         if node_id not in g_msg.keys():
             print 'Error, node {0} does not exist \n'.format(node_id)
         else:
-            g_msg[node_id].put((arg, ''))
+            key_id = int(tp[1])
+            find_key_msg = message(node_id, node_id, 'find_successor', key_id)
+            find_key_msg.send()
+            #g_msg[node_id].put((arg, ''))
 
         # node_id will print out results once found
 
@@ -415,11 +443,12 @@ class MP2Shell(cmd.Cmd):
             return
 
         # put to queue
-        node_id = int(tp[1])
+        node_id = int(tp[0])
         if node_id not in g_msg.keys():
             print 'Error, node {0} does not exist \n'.format(node_id)
         else:
-            g_msg[node_id].put((arg, ''))
+            n_threads[node_id].leave()
+            # g_msg[node_id].put((arg, ''))
 
     def do_show(self, arg):
         """
@@ -427,22 +456,27 @@ class MP2Shell(cmd.Cmd):
         :param arg: node id p, or 'all'
         :return:
         """
+        print arg
         tp = arg.split()
         if len(tp) < 1:
             print("not enough parameters")
             return
 
-        if tp[1] == 'all':
+        if tp[0] == 'all':
             # push to all queues
             # each node will print out one table showing its info
             for key in g_msg:
-                g_msg[key].put((arg, ''))
+                show_msg = message(key, key, 'show_keys', [])
+                show_msg.send()
+                # g_msg[key].put((arg, ''))
         else:
-            node_id = int(tp[1])
+            node_id = int(tp[0])
             if node_id not in g_msg.keys():
                 print 'Error, node {0} does not exist \n'.format(node_id)
             else:
-                g_msg[node_id].put((arg, ''))
+                show_msg = message(node_id, node_id, 'show_keys', [])
+                show_msg.send()
+                # g_msg[node_id].put((arg, ''))
 
     def do_bye(self, arg):
         """
