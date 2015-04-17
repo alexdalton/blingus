@@ -8,6 +8,7 @@ import threading
 import time
 import cmd
 import Queue
+import csv
 import json
 import numpy
 import math
@@ -24,6 +25,11 @@ g_dim = 8
 
 # global dictionary to store thread handles indexed by node ID
 n_threads = {}
+
+# global flag for saving to file
+g_save_file = False
+# g_csv_handle    as the FILE handle
+
 
 class message():
     def __init__(self, from_id, to_id, msg, msg_args=[], ackID=None):
@@ -248,6 +254,9 @@ class NodeThread(threading.Thread):
 
     def parse_msg_queue(self):
 
+        global g_csv_handle
+
+
         if not g_msg[self.node_id].empty():
             msg_tp = g_msg[self.node_id].get()
 
@@ -287,6 +296,16 @@ class NodeThread(threading.Thread):
             elif msg == 'show_keys':
                 self.keys.sort()
                 print 'node {0}: {1}'.format(self.node_id, self.keys)
+
+                # write to file
+                if g_save_file is True:
+                    tmp_keys = self.keys
+                    tmp_keys.sort()
+                    tmp_keys.insert(0, self.node_id)
+
+                    g_csv_handle.writerow(tmp_keys)
+
+
             elif msg == 'transfer_keys_join':
                 # transfer keys_id <= self.predecessor to self.predecessor
                 keys_to_transfer = []
@@ -456,6 +475,18 @@ class MP2Shell(cmd.Cmd):
         x.sort()
         print x
 
+    def do_closefile(self, arg):
+        """
+        properly close the file
+        :param arg:
+        :return:
+        """
+        global g_file_handle
+
+        g_file_handle.close()
+
+        print 'closed'
+
     def do_find(self, arg):
         """
         ask node p to locate key k
@@ -512,6 +543,7 @@ class MP2Shell(cmd.Cmd):
         :param arg: node id p, or 'all'
         :return:
         """
+
         print arg
         tp = arg.split()
         if len(tp) < 1:
@@ -521,9 +553,14 @@ class MP2Shell(cmd.Cmd):
         if tp[0] == 'all':
             # push to all queues
             # each node will print out one table showing its info
-            for key in g_msg:
+            key_list = g_msg.keys()
+            key_list.sort()
+            for key in key_list:
                 show_msg = message(key, key, 'show_keys', [])
                 show_msg.send()
+
+                # to save in order.
+                time.sleep(0.2)
                 # g_msg[key].put((arg, ''))
         else:
             node_id = int(tp[0])
@@ -549,6 +586,21 @@ class MP2Shell(cmd.Cmd):
 
 
 def main(argv):
+
+    global g_save_file
+    global g_csv_handle
+    global g_file_handle
+
+    # check if we need to save in file
+    if len(argv) == 2:
+        print 'show result will also be saved in file\n'
+        g_save_file = True
+
+        # create file
+        file_name = str(argv[1])
+        g_file_handle = open(file_name, 'w')
+        g_csv_handle = csv.writer(g_file_handle, delimiter=' ')
+
     # start MP2Shell
     # MP2shell as the coordinator, creates and removes nodes.
     shell_thread = CmdThread('MP2Shell')
