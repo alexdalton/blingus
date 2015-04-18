@@ -1,0 +1,9 @@
+All result obtained by averaging N=5 rounds.
+(avg_add, avg_find)
+Evaluation results: (add, find)
+    P=4, F=64:(96.4, 4.4375)
+    P=8, F=64:(129.05, 6.0875)
+    P=10, F=64:(156.16, 6.6125)
+    P=20, F=64:(199.92, 8.590625)
+    P=30, F=64:(246.76666666666668, 9.34375)
+
