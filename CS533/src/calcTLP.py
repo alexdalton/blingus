@@ -98,6 +98,9 @@ for file in files:
 
     trace_fd.close()
 
+    print cpuTasks[0][-10:-1]
+    print cpuTaskTimes[0][-10:-1]
+
     for i in xrange(8):
         trackTask = None
         trackTaskStart = None
@@ -152,6 +155,6 @@ for file in files:
 
     plt.figure(4)
     plt.pie(x, labels=labels)
-    plt.show()
+    #plt.show()
 # Print out TLPs in a nice format
 print tabulate(tlps, headers=["Trace File", "TLP"])
