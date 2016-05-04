@@ -102,6 +102,8 @@ for file in files:
         if function == "sched_switch":
             if line.find("==> next_comm=swapper") > -1:
                 cpuState[cpuNum] = 0
+                cpuFreqs[cpuNum].append(0)
+                cpuFreqTimes[cpuNum].append(time)
             else:
                 cpuState[cpuNum] = 1
         elif function.find("cpufreq") > -1:
@@ -114,6 +116,8 @@ for file in files:
         for i in xrange(numCores):
             if (not i == cpuNum) and (len(cpuTasks[i]) > 0) and (cpuTasks[i][-1] == pid):
                 cpuState[i] = 0
+                cpuFreqs[i].append(0)
+                cpuFreqTimes[i].append(time)
 
         cpuTasks[cpuNum].append(pid)
         cpuTaskTimes[cpuNum].append(time)
@@ -160,13 +164,13 @@ for file in files:
 
     tlps.append([file, float(tlpNumerator) / float(tlpDenominator)])
 
-    plt.figure(1, figsize=(28, 15), dpi=80)
-    plt.plot(eventTimes, tlpTimes)
-    plt.ylabel("TLP")
-    plt.xlabel("Time (s)")
-    plt.title("TLP vs Time for {0}".format(file))
-    plt.savefig(plots_dir + "{0}_TLP_vs_Time.png".format(file), bbox_inches='tight')
-    plt.clf()
+    # plt.figure(1, figsize=(28, 15), dpi=80)
+    # plt.plot(eventTimes, tlpTimes)
+    # plt.ylabel("TLP")
+    # plt.xlabel("Time (s)")
+    # plt.title("TLP vs Time for {0}".format(file))
+    # plt.savefig(plots_dir + "{0}_TLP_vs_Time.png".format(file), bbox_inches='tight')
+    # plt.clf()
 
     plt.figure(2, figsize=(28, 15), dpi=80)
     for i in range(0, 8):
@@ -180,16 +184,17 @@ for file in files:
         plt.xlabel("Time (s)")
         plt.title("CPU{0} Frequency vs. Time".format(i, file))
 
-    plt.savefig(plots_dir + "{0}_CPUFreqs_vs_Time.png".format(file), bbox_inches='tight')
+    plt.show()
+    #plt.savefig(plots_dir + "{0}_CPUFreqs_vs_Time.png".format(file), bbox_inches='tight')
     plt.clf()
 
-    plt.figure(3, figsize=(28, 15), dpi=80)
-    plt.plot(eventTimes, activeCPUs, ls='steps')
-    plt.ylabel("# Active CPUs")
-    plt.xlabel("Time (s)")
-    plt.title("# Active CPUs vs Time for {0}".format(file))
-    plt.savefig(plots_dir + "{0}_ActiveCPUS_vs_Time.png".format(file), bbox_inches='tight')
-    plt.clf()
+    # plt.figure(3, figsize=(28, 15), dpi=80)
+    # plt.plot(eventTimes, activeCPUs, ls='steps')
+    # plt.ylabel("# Active CPUs")
+    # plt.xlabel("Time (s)")
+    # plt.title("# Active CPUs vs Time for {0}".format(file))
+    # plt.savefig(plots_dir + "{0}_ActiveCPUS_vs_Time.png".format(file), bbox_inches='tight')
+    # plt.clf()
 
     x = []
     labels = []
@@ -207,10 +212,10 @@ for file in files:
     x.append(kernelSum)
     labels.append("Kernel")
 
-    plt.figure(4, figsize=(28, 15), dpi=80)
-    plt.pie(x, labels=labels)
-    plt.savefig(plots_dir + "{0}_Process_Piechart.png".format(file), bbox_inches='tight')
-    plt.clf()
+    # plt.figure(4, figsize=(28, 15), dpi=80)
+    # plt.pie(x, labels=labels)
+    # plt.savefig(plots_dir + "{0}_Process_Piechart.png".format(file), bbox_inches='tight')
+    # plt.clf()
 
 # Print out TLPs in a nice format
 print tabulate(tlps, headers=["Trace File", "TLP"])
